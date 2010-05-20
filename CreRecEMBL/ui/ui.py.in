@@ -1,0 +1,766 @@
+# vim: encoding=utf-8 sw=4 ts=4 noexpandtab :
+
+# CreRecEMBL - in silico loxP/Cre recombination
+# Copyright (C) 2010 Christian Becke <christianbecke@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+import sys
+import os.path
+import warnings
+
+import glib
+import gobject
+import gio
+import gtk
+
+try:
+	import cStringIO as StringIO
+except ImportError:
+	import StringIO
+
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Alphabet import generic_dna
+
+ENABLE_UNINSTALLED = @ENABLE_UNINSTALLED@
+
+DATADIR = "@pkgdatadir@"
+
+if ENABLE_UNINSTALLED:
+	BASEDIR = os.path.dirname (os.path.dirname (os.path.dirname (os.path.realpath (__file__))))
+	sys.path.insert (0, BASEDIR)
+	DATADIR = os.path.join (BASEDIR, "data")
+	SEARCHPATH = [os.path.dirname (BASEDIR), BASEDIR, DATADIR]
+
+from CreRecEMBL import seq
+
+_seq_count = 0
+
+_last_folder = os.path.expanduser ("~")
+
+_icon_theme_initialized = False
+
+COL_SEQ_NAME = 0
+COL_SEQ_SELECTED_ACCEPTOR = 1
+COL_SEQ_SELECTED_DONOR = 2
+COL_SEQ_COPYNR = 3
+COL_SEQ_VIEW = 4
+
+SUPPORTED_FILE_FORMATS = (
+	("fasta", "FASTA files", ".fasta"),
+	("genbank", "GenBank files", ".gbk"),
+)
+
+warnings.filterwarnings ("ignore", ".*Malformed LOCUS line.*")
+
+_file_cache = {}
+
+def get_file (filename):
+	global _file_cache
+
+	file = _file_cache.get (filename, None)
+	if file:
+		return file
+
+	for dir in SEARCHPATH:
+		file = os.path.join (dir, filename)
+		if os.path.exists (file):
+			_file_cache[filename] = file
+			return file
+	return filename
+
+
+class CreAssistantHandler:
+
+	def __init__ (self, viewmanager):
+		self._viewmanager = viewmanager
+		self._parent = None
+
+		self._builder = gtk.Builder ()
+		gladefile = get_file ("cre_assistant.ui")
+		self._builder.add_from_file (gladefile)
+		self._cre_assistant = self._builder.get_object ("cre_assistant")
+
+		self._sequence_list = gtk.ListStore (gobject.TYPE_STRING, # name
+									gobject.TYPE_BOOLEAN,	# selected as acceptor vector
+									gobject.TYPE_BOOLEAN,	# selected as donor vector
+									gobject.TYPE_STRING,	# copy number
+									gobject.TYPE_PYOBJECT)	# view object
+		self._donor_filter = self._sequence_list.filter_new ()
+		self._donor_filter.set_visible_func (self._donor_filter_visible_func)
+		self._copynumber_filter = self._sequence_list.filter_new ()
+		self._copynumber_filter.set_visible_func (self._copynumber_filter_visible_func)
+
+		self._acceptor_combobox = self._builder.get_object ("acceptor_combobox")
+		self._acceptor_combobox.set_model (self._sequence_list)
+		cr = gtk.CellRendererText ()
+		self._acceptor_combobox.pack_start (cr, True)
+		self._acceptor_combobox.add_attribute (cr, "text", COL_SEQ_NAME)
+
+		self._donor_treeview = self._builder.get_object ("donor_treeview")
+		self._donor_treeview.set_model (self._donor_filter)
+		cr = gtk.CellRendererToggle ()
+		cr.connect ("toggled", self.cell_renderer_toggle_toggled_cb)
+		col = gtk.TreeViewColumn (None, cr, active=COL_SEQ_SELECTED_DONOR)
+		self._donor_treeview.append_column (col)
+		cr = gtk.CellRendererText ()
+		col = gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
+		self._donor_treeview.append_column (col)
+
+		self._copynumber_treeview = self._builder.get_object ("copynumber_treeview")
+		self._copynumber_treeview.set_model (self._copynumber_filter)
+		cr = gtk.CellRendererText ()
+		col = gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
+		self._copynumber_treeview.append_column (col)
+		cr = gtk.CellRendererSpin ()
+		cr.connect ("edited", self.cell_renderer_spin_edited_cb)
+		cr.set_property ("adjustment", gtk.Adjustment (value=1, lower=1, upper=10, step_incr=1))
+		cr.set_property ("editable", True)
+		col = gtk.TreeViewColumn ("Copies", cr, text=COL_SEQ_COPYNR)
+		self._copynumber_treeview.append_column (col)
+
+		self._builder.connect_signals (self)
+
+
+	def _do_cre (self, selected_views):
+		srecs = []
+		for view in selected_views:
+				srec = view.get_sequence ()
+				if not seq.has_loxp (srec):
+					view.show_error ("No loxP site found!")
+					break
+				elif seq.has_loxp_fwd_and_rev (srec):
+					view.show_error ("The sequence contains both "
+										"forward and reverse loxP sites. "
+										"CreRecEMBL does not know how to "
+										"handle such sequences.")
+					break
+				srecs.append (srec)
+
+		if srecs:
+			srec_count = len (srecs)
+			if srec_count > 4:
+				n_windows = math.factorial (srec_count - 1)
+				msg = "Recombining %d sequences will result in %d combinations." % (
+										srec_count, n_windows)
+				msg += " This means %d new windows will be opened." % (n_windows,)
+				msg += " Proceed anyways?"
+				dlg = gtk.MessageDialog (
+									parent=self._parent,
+									flags=gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+									type=gtk.MESSAGE_QUESTION,
+									buttons=gtk.BUTTONS_YES_NO,
+									message_format=msg)
+				resp = dlg.run ()
+				if resp != gtk.RESPONSE_YES:
+					return
+			res = seq.cre (*srecs)
+			for r in res:
+				new_view = self._viewmanager.new_view ()
+				new_view.set_sequence_from_seq_record (r)
+
+
+	def _donor_filter_visible_func (self, model, it):
+		return not model.get_value (it, COL_SEQ_SELECTED_ACCEPTOR)
+
+
+	def _copynumber_filter_visible_func (self, model, it):
+		return model.get_value (it, COL_SEQ_SELECTED_ACCEPTOR) or model.get_value (it, COL_SEQ_SELECTED_DONOR)
+
+
+	def _cre_assistant_set_following_pages_complete (self, page, complete):
+		change = False
+		for i in xrange (self._cre_assistant.get_n_pages ()):
+			p = self._cre_assistant.get_nth_page (i)
+
+			if not p:
+				continue
+
+			if p == page:
+				change = True
+				continue
+
+			if change:
+				self._cre_assistant.set_page_complete (p, complete)
+
+
+	def show (self, parent):
+		self._parent = parent
+		views = self._viewmanager.get_view_list ()
+		self._sequence_list.clear ()
+		for view in views:
+			self._sequence_list.append ([view.get_name (), False, False, "1", view])
+		self._cre_assistant.show ()
+
+
+	def cre_assistant_apply_cb (self, assistant):
+		selected_views = []
+		it = self._sequence_list.get_iter_first ()
+		while it:
+			(is_acceptor, is_donor, copynr, view) = self._sequence_list.get (it,
+								COL_SEQ_SELECTED_ACCEPTOR,
+								COL_SEQ_SELECTED_DONOR,
+								COL_SEQ_COPYNR,
+								COL_SEQ_VIEW)
+			if is_acceptor:
+				for i in xrange (int (copynr)):
+					selected_views.insert (-1, view)
+			elif is_donor:
+				for i in xrange (int (copynr)):
+					selected_views.append (view)
+			it = self._sequence_list.iter_next (it)
+		self._do_cre (selected_views)
+
+
+	def cre_assistant_prepare_cb (self, assistant, page):
+		if page == self._builder.get_object ("page_copy_numbers"):
+			self._cre_assistant.set_page_complete (page, True)
+
+
+	def cre_assistant_cancel_cb (self, assistant):
+		assistant.hide ()
+
+
+	def cre_assistant_close_cb (self, assistant):
+		assistant.hide ()
+
+
+	def acceptor_combobox_changed_cb (self, combobox):
+		completed = False
+		active_iter = combobox.get_active_iter ()
+		if active_iter:
+			completed = True
+			it = self._sequence_list.get_iter_first ()
+			while it:
+				self._sequence_list.set (it, COL_SEQ_SELECTED_ACCEPTOR, False)
+				it = self._sequence_list.iter_next (it)
+			self._sequence_list.set (active_iter, COL_SEQ_SELECTED_ACCEPTOR, True)
+		page = self._builder.get_object ("page_choose_acceptor")
+		self._cre_assistant_set_following_pages_complete (page, False)
+		self._cre_assistant.set_page_complete (page, completed)
+
+
+	def cell_renderer_toggle_toggled_cb (self, cr, path):
+		it = self._donor_filter.convert_iter_to_child_iter (self._donor_filter.get_iter_from_string (path))
+		old = self._sequence_list.get_value (it, COL_SEQ_SELECTED_DONOR)
+		self._sequence_list.set (it, COL_SEQ_SELECTED_DONOR, not old)
+		filter_iter = self._donor_filter.get_iter_first ()
+		completed = False
+		while filter_iter:
+			it = self._donor_filter.convert_iter_to_child_iter (filter_iter)
+			if self._sequence_list.get_value (it, COL_SEQ_SELECTED_DONOR):
+				completed = True
+				break
+			filter_iter = self._donor_filter.iter_next (filter_iter)
+		page = self._builder.get_object ("page_choose_donor")
+		self._cre_assistant_set_following_pages_complete (page, False)
+		self._cre_assistant.set_page_complete (page, completed)
+
+
+	def cell_renderer_spin_edited_cb (self, cr, path, new_value):
+		it = self._copynumber_filter.convert_iter_to_child_iter (self._copynumber_filter.get_iter_from_string (path))
+		self._sequence_list.set (it, COL_SEQ_COPYNR, new_value)
+
+
+
+class CreFileChooserDialog (gtk.FileChooserDialog):
+
+	def __init__ (self,
+					title=None,
+					parent=None,
+					action=gtk.FILE_CHOOSER_ACTION_OPEN,
+					buttons=None,
+					backend=None):
+		gtk.FileChooserDialog.__init__ (self,
+									title=None,
+									parent=None,
+									action=action,
+									buttons=None,
+									backend=None)
+		alignment = gtk.Alignment (xalign=1.0)
+
+		box = gtk.HBox ()
+		box.set_spacing (14)
+		alignment.add (box)
+
+		label = gtk.Label ()
+		label.set_text ("Specify file format:")
+		box.pack_start (label, False)
+
+		self._format_list = gtk.ListStore (gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		for format in SUPPORTED_FILE_FORMATS:
+			self._format_list.append (format)
+
+		self._format_combobox = gtk.ComboBox (model=self._format_list)
+		cr = gtk.CellRendererText ()
+		self._format_combobox.pack_start (cr, False)
+		self._format_combobox.add_attribute (cr, "text", 1)
+		self._format_combobox.connect ("changed", self._format_combobox_changed_cb)
+		box.pack_start (self._format_combobox, False)
+
+		alignment.show_all ()
+		self.set_extra_widget (alignment)
+
+
+	def add_buttons (self, *args):
+		gtk.Dialog.add_buttons (self, *args)
+		self.set_response_sensitive (gtk.RESPONSE_ACCEPT, False)
+
+
+	def select_file_format (self, format):
+		if not format:
+			return
+		it = self._format_list.get_iter_first ()
+		while it:
+			if self._format_list.get_value (it, 0) == format:
+				self._format_combobox.set_active_iter (it)
+				break
+			it = self._format_list.iter_next (it)
+
+
+	def _format_combobox_changed_cb (self, combobox):
+		it = combobox.get_active_iter ()
+		if it:
+			action = self.get_action ()
+			if action == gtk.FILE_CHOOSER_ACTION_SAVE:
+				filename = self.get_filename ()
+				ext = self._format_list.get_value (it, 2)
+				if filename:
+					filename = glib.filename_display_basename (filename)
+					(name, old_ext) = os.path.splitext (filename)
+					self.set_current_name ("%s%s" % (name, ext))
+			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, True)
+		else:
+			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, False)
+
+
+	def get_file_format (self):
+		ret = None
+		it = self._format_combobox.get_active_iter ()
+		if it:
+			ret = self._format_list.get_value (it, 0)
+		return ret
+
+gobject.type_register (CreFileChooserDialog)
+
+
+
+class SequenceView:
+
+	def __init__ (self, viewmanager):
+		self._viewmanager = viewmanager
+		self._name = None
+		self._gfile = None
+		self._file_format = None
+
+		self._loading = False
+
+		self._clipboard = gtk.clipboard_get ()
+		self._clipboard.connect ("owner-change", self._clipboard_owner_change_cb)
+
+
+		self._it = gtk.icon_theme_get_default ()
+		self._init_icon_theme ()
+
+		gladefile = get_file ("crerecembl.ui")
+		self._builder = gtk.Builder ()
+		self._builder.add_from_file (gladefile)
+
+		self._win = self._builder.get_object ("window")
+		icon = self._it.load_icon ("crerecembl", 48, 0)
+		self._win.set_icon (icon)
+
+		self._textbuffer = self._builder.get_object ("textbuffer")
+		self._action_save = self._builder.get_object ("action_save")
+		self._action_save.set_sensitive (False)
+		self._action_cre = self._builder.get_object ("action_cre")
+		self._action_cre.set_sensitive (False)
+		self._action_decre = self._builder.get_object ("action_decre")
+		self._action_decre.set_sensitive (False)
+		self._action_delete = self._builder.get_object ("action_delete")
+		self._action_delete.set_sensitive (False)
+		self._action_copy = self._builder.get_object ("action_copy")
+		self._action_copy.set_sensitive (False)
+		self._action_cut = self._builder.get_object ("action_cut")
+		self._action_cut.set_sensitive (False)
+		self._action_paste = self._builder.get_object ("action_paste")
+		self._set_paste_sensitivity_according_to_clipboard ()
+
+		self._builder.connect_signals (self)
+
+		self._update_name ()
+
+		self._win.show ()
+
+
+	def _init_icon_theme (self):
+		global _icon_theme_initialized
+
+		if ENABLE_UNINSTALLED and not _icon_theme_initialized:
+			self._it.prepend_search_path (os.path.join (DATADIR, "icons"))
+			_icon_theme_initialized = True
+
+
+	def get_name (self):
+		return self._name
+
+
+	def _update_name (self, name=None):
+		global _seq_count
+
+		if name:
+			self._name = name
+		else:
+			_seq_count += 1
+			self._name = "Sequence %d" % (_seq_count,)
+
+		self._win.set_title ("%s - CreRecEMBL" % (self._name,))
+
+
+	def _get_name_from_gfile (self, gfile, attribute=gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, strip_ext=True):
+		if gfile.query_exists ():
+			file_info = gfile.query_info (attribute)
+			full_name = file_info.get_attribute_as_string (attribute)
+		else:
+			full_name = glib.filename_display_basename (gfile.get_path ())
+		if strip_ext:
+			(name, ext) = os.path.splitext (full_name)
+		else:
+			name = full_name
+		return name
+
+
+	def set_sequence_from_seq_record (self, seq_record):
+		self._textbuffer.set_text (str (seq_record.seq))
+		name = seq_record.annotations.get ("CreRecEMBL_name", None)
+		self._update_name (name=name)
+
+
+	def _load_contents_async_cb (self, gfile, result, file_format):
+		(contents, length, etag) = gfile.load_contents_finish (result)
+		self._loading = False
+		handle = StringIO.StringIO (contents)
+		records = list (SeqIO.parse (handle, file_format))
+		handle.close ()
+		if len (records) < 1:
+			msg = "Failed to open file '%s'!" % (self._get_name_from_gfile (gfile, strip_ext=False),)
+			self.show_error (msg)
+			return
+		record = records[0]
+		name = record.annotations.get ("CreRecEMBL_name", None)
+		if not name:
+			name = self._get_name_from_gfile (gfile)
+			record.annotations["CreRecEMBL_name"] = name
+		self.set_sequence_from_seq_record (record)
+		self._gfile = gfile
+		self._file_format = file_format
+		self._action_save.set_sensitive (False)
+
+
+	def set_sequence_from_gfile (self, gfile, file_format):
+		self._loading = True
+		gfile.load_contents_async (self._load_contents_async_cb, user_data=file_format)
+
+
+	def _replace_contents_async_cb (self, gfile, result):
+		gfile.replace_contents_finish (result)
+		self._action_save.set_sensitive (False)
+		self._gfile = gfile
+		name = self._get_name_from_gfile (gfile)
+		self._update_name (name=name)
+
+
+	def _write_sequence_to_gfile (self, gfile, file_format):
+		(start, end) = self._textbuffer.get_bounds ()
+		contents = self._textbuffer.get_text (start, end)
+		s = Seq (contents)
+		s.alphabet = generic_dna
+		srec = SeqRecord (s)
+		name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
+		srec.annotations["CreRecEMBL_name"] = name
+		seq_str = srec.format (file_format)
+		gfile.replace_contents_async (seq_str, self._replace_contents_async_cb)
+
+
+	def get_sequence (self):
+		text = self._textbuffer.get_text (self._textbuffer.get_start_iter (),
+											self._textbuffer.get_end_iter ())
+		s = Seq (text)
+		s.alphabet = generic_dna
+		srec = SeqRecord (s)
+		srec.annotations["CreRecEMBL_name"] = self.get_name ()
+		return srec
+
+
+	def show_error (self, msg):
+		dlg = gtk.MessageDialog (
+								parent=self._win,
+								flags=gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+								type=gtk.MESSAGE_ERROR,
+								buttons=gtk.BUTTONS_CLOSE,
+								message_format=msg)
+		self._win.present ()
+		dlg.run ()
+		dlg.destroy ()
+
+
+	def show_filechooser (self, action=gtk.FILE_CHOOSER_ACTION_OPEN, uri=None, file_format=None):
+		global _last_folder
+
+		dlg = CreFileChooserDialog (action=action)
+
+		if action == gtk.FILE_CHOOSER_ACTION_OPEN:
+			dlg.set_title ("Open sequence")
+			dlg.add_buttons (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+			dlg.set_select_multiple (True)
+			if _last_folder:
+				dlg.set_current_folder (_last_folder)
+		elif action == gtk.FILE_CHOOSER_ACTION_SAVE:
+			dlg.set_title ("Save sequence")
+			dlg.add_buttons (gtk.STOCK_SAVE, gtk.RESPONSE_ACCEPT, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+			if uri:
+				gfile = gio.File (uri=uri)
+				if gfile.query_exists ():
+					dlg.set_uri (uri)
+				else:
+					if _last_folder:
+						dlg.set_current_folder (_last_folder)
+					name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
+					dlg.set_current_name (name)
+
+		if not file_format:
+			file_format = self._file_format
+		dlg.select_file_format (file_format)
+
+		resp = dlg.run ()
+		uris = []
+		if resp == gtk.RESPONSE_ACCEPT:
+			for uri in dlg.get_uris ():
+				uris.append (uri)
+		file_format = dlg.get_file_format ()
+		_last_folder = dlg.get_current_folder ()
+		dlg.destroy ()
+		return (file_format, uris)
+
+
+	def _received_clipboard_contents_cb (self, clipboard, selection_data, user_data):
+		self._action_paste.set_sensitive (selection_data.targets_include_text ())
+
+
+	def _set_paste_sensitivity_according_to_clipboard (self):
+		display = self._clipboard.get_display ()
+		if display.supports_selection_notification ():
+			self._clipboard.request_contents ("TARGETS", self._received_clipboard_contents_cb)
+		else:
+			self._action_paste.set_sensitive (True)
+
+
+	def _clipboard_owner_change_cb (self, clipboard, event):
+		self._set_paste_sensitivity_according_to_clipboard ()
+
+
+	def sequence_count_changed_cb (self, viewmanager, pspec):
+		if viewmanager.get_property (pspec.name) > 1:
+			self._action_cre.set_sensitive (True)
+		else:
+			self._action_cre.set_sensitive (False)
+
+
+	def action_new_activate_cb (self, *args):
+		self._viewmanager.new_view ()
+
+
+	def _open_uris_async (self, uris, format):
+		if not uris:
+			return False
+
+		uri = uris.pop (0)
+		gfile = gio.File (uri=uri)
+		if self._gfile or self._loading:
+			new_view = self._viewmanager.new_view ()
+			new_view.set_sequence_from_gfile (gfile, format)
+		else:
+			self.set_sequence_from_gfile (gfile, format)
+		return len (uris) > 0
+
+
+	def action_open_activate_cb (self, *args):
+		(format, uris) = self.show_filechooser ()
+		self._file_format = format
+		glib.idle_add (self._open_uris_async, uris, format)
+		return
+		for uri in uris:
+			gfile = gio.File (uri=uri)
+			if self._gfile:
+				new_view = self._viewmanager.new_view ()
+				new_view.set_sequence_from_gfile (gfile, format)
+			else:
+				self.set_sequence_from_gfile (gfile, format)
+
+
+	def action_save_activate_cb (self, *args):
+		if not self._gfile:
+			path = os.path.join (_last_folder, self.get_name ())
+			gfile = gio.File (path=path)
+			(format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+												uri=gfile.get_uri ())
+			if not uris:
+				return
+
+			self._file_format = format
+
+			gfile = gio.File (uri=uris[0])
+
+		self._write_sequence_to_gfile (gfile, format)
+
+
+	def action_save_as_activate_cb (self, *args):
+		if not self._gfile:
+			path = os.path.join (_last_folder, self.get_name ())
+			gfile = gio.File (path=path)
+		else:
+			gfile = self._gfile
+		(format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+											uri=gfile.get_uri ())
+		if not uris:
+			return
+
+		self._file_format = format
+		gfile = gio.File (uri=uris[0])
+		self._write_sequence_to_gfile (gfile, format)
+
+
+	def action_close_activate_cb (self, *args):
+		self._viewmanager.remove_view (self)
+		self._win.destroy ()
+
+
+	def action_quit_activate_cb (self, *args):
+		self._viewmanager.quit ()
+
+
+	def action_cut_activate_cb (self, *args):
+		self._textbuffer.cut_clipboard (self._clipboard, True)
+
+
+	def action_copy_activate_cb (self, *args):
+		self._textbuffer.copy_clipboard (self._clipboard)
+
+
+	def action_paste_activate_cb (self, *args):
+		self._textbuffer.paste_clipboard (self._clipboard, None, True)
+
+
+	def action_delete_activate_cb (self, *args):
+		self._textbuffer.delete_selection (True, True)
+
+
+	def action_cre_activate_cb (self, *args):
+		self._viewmanager.show_cre_assistant (self._win)
+
+
+	def action_decre_activate_cb (self, *args):
+		res = seq.decre (self.get_sequence ())
+		for r in res:
+			new_view = self._viewmanager.new_view ()
+			new_view.set_sequence_from_seq_record (r)
+
+
+	def textbuffer_changed_cb (self, *args):
+		if seq.count_loxp (self.get_sequence ()) > 1:
+			self._action_decre.set_sensitive (True)
+		else:
+			self._action_decre.set_sensitive (False)
+
+
+	def textbuffer_mark_changed_cb (self, textbuffer, *args):
+		if textbuffer.get_selection_bounds ():
+			self._action_delete.set_sensitive (True)
+			self._action_copy.set_sensitive (True)
+			self._action_cut.set_sensitive (True)
+		else:
+			self._action_delete.set_sensitive (False)
+			self._action_copy.set_sensitive (False)
+			self._action_cut.set_sensitive (False)
+
+
+	def textbuffer_modified_changed_cb (self, *args):
+		self._action_save.set_sensitive (True)
+
+
+	def textbuffer_insert_text_cb (self, *args):
+		self._action_save.set_sensitive (True)
+
+
+
+class ViewManager (gobject.GObject):
+
+	__gproperties__ = {
+				"sequence_count": (gobject.TYPE_INT,
+					"sequence count",
+					"number of sequence files currently opened",
+					0, 1000, 0,
+					gobject.PARAM_READABLE)
+					}
+
+	def __init__ (self):
+		gobject.GObject.__init__ (self)
+		self._views = []
+		self._cre_assistant_handler = CreAssistantHandler (self)
+		self.new_view ()
+
+
+	def run (self):
+		gtk.main ()
+
+
+	def do_get_property (self, pspec):
+		if pspec.name == "sequence-count":
+			return len (self._views)
+		else:
+			raise AttributeError, "unknown property '%s'" % (pspec.name,)
+
+
+	def new_view (self):
+		view = SequenceView (self)
+		self.connect ("notify::sequence-count", view.sequence_count_changed_cb)
+		self._views.append (view)
+		self.notify ("sequence_count")
+		return view
+
+
+	def remove_view (self, view):
+		self._views.remove (view)
+		self.notify ("sequence_count")
+		if len (self._views) == 0:
+			gtk.main_quit ()
+
+
+	def quit (self):
+		for view in self.get_view_list ():
+			view.action_close_activate_cb (None)
+
+
+	def show_cre_assistant (self, view):
+		self._cre_assistant_handler.show (view)
+
+
+	def get_view_list (self):
+		return self._views[:]
+
+gobject.type_register (ViewManager)
+
