@@ -1,4 +1,4 @@
-AC_INIT([CreRecEMBL], [0.1])
+AC_INIT([CreRecEMBL], [0.1], [christianbecke@gmail.com], [CreRecEMBL])
 AC_CONFIG_SRCDIR([CreRecEMBL/__init__.py])
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON
