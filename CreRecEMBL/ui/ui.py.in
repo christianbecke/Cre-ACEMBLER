@@ -40,11 +40,12 @@ ENABLE_UNINSTALLED = @ENABLE_UNINSTALLED@
 
 DATADIR = "@pkgdatadir@"
 
+SEARCHPATH = [DATADIR,]
 if ENABLE_UNINSTALLED:
 	BASEDIR = os.path.dirname (os.path.dirname (os.path.dirname (os.path.realpath (__file__))))
 	sys.path.insert (0, BASEDIR)
 	DATADIR = os.path.join (BASEDIR, "data")
-	SEARCHPATH = [os.path.dirname (BASEDIR), BASEDIR, DATADIR]
+	SEARCHPATH.insert (0, DATADIR)
 
 from CreRecEMBL import seq
 
