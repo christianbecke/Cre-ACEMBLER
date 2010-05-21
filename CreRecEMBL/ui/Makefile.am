@@ -4,7 +4,7 @@ ui_PYTHON = \
 			ui.py
 
 CLEANFILES = ui.py
-EXTRADIST = ui.py.in
+EXTRA_DIST = ui.py.in
 BUILT_SOURCES = ui.py
 
 edit = sed \
