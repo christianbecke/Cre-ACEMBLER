@@ -1,4 +1,3 @@
-*.pyc
 aclocal.m4
 autom4te.cache
 config.log
@@ -9,5 +8,7 @@ install-sh
 Makefile
 Makefile.in
 missing
+*.pyc
 py-compile
+setup.py
 ui.py

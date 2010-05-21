@@ -2,8 +2,8 @@ from distutils.core import setup
 import py2exe
 
 setup (
-	name="CreRecEMBL",
-	version="0.1",
+	name="@PACKAGE_NAME@",
+	version="@PACKAGE_VERSION@",
 	windows=[
 		{
 			"script": "crerecembl",
@@ -17,7 +17,7 @@ setup (
 	},
 
 	data_files=[
-		"data/crerecembl.glade",
-		"data/cre_assistant.glade"
+		"data/crerecembl.ui",
+		"data/cre_assistant.ui"
 	]
 )
