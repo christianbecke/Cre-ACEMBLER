@@ -3,7 +3,7 @@ SUBDIRS = CreRecEMBL data
 bin_SCRIPTS = crerecembl
 
 CLEANFILES = crerecembl setup.py
-EXTRA_DIST = crerecembl.in setup.py
+EXTRA_DIST = crerecembl.in setup.py.in
 BUILT_SOURCES = crerecembl setup.py
 
 edit = sed -e 's,@PYTHON[@],$(PYTHON),g' \
