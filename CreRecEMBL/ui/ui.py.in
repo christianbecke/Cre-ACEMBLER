@@ -57,6 +57,7 @@ _last_folder = os.path.expanduser ("~")
 
 _icon_theme_initialized = False
 _aboutdialog_initialized = False
+_icon_factory = None
 
 COL_SEQ_NAME = 0
 COL_SEQ_SELECTED_ACCEPTOR = 1
@@ -379,6 +380,7 @@ class SequenceView:
 
 		self._it = gtk.icon_theme_get_default ()
 		self._init_icon_theme ()
+		self._init_icon_factory ()
 
 		gladefile = get_file ("crerecembl.ui")
 		self._builder = gtk.Builder ()
@@ -410,6 +412,23 @@ class SequenceView:
 		self._update_name ()
 
 		self._win.show ()
+
+
+	def _init_icon_factory (self):
+		global _icon_factory
+
+		if not _icon_factory:
+			_icon_factory = gtk.IconFactory ()
+			for icon_name in ["crerecembl-cre", "crerecembl-decre"]:
+				icon_source = gtk.IconSource ()
+				icon_source.set_icon_name (icon_name)
+				icon_source.set_direction_wildcarded (True)
+				icon_source.set_state_wildcarded (True)
+				icon_source.set_size_wildcarded (True)
+				icon_set = gtk.IconSet ()
+				icon_set.add_source (icon_source)
+				_icon_factory.add (icon_name, icon_set)
+			_icon_factory.add_default ()
 
 
 	def _init_icon_theme (self):

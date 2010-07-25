@@ -1,5 +1,5 @@
 themedir = $(datadir)/icons/hicolor
-size = 48x48
+size = 32x32
 context = apps
 
 iconsdir = $(themedir)/$(size)/$(context)

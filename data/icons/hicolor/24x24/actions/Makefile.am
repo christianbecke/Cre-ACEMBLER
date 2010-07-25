@@ -1,9 +1,9 @@
 themedir = $(datadir)/icons/hicolor
-size = 48x48
-context = apps
+size = 24x24
+context = actions
 
 iconsdir = $(themedir)/$(size)/$(context)
 
-icons_DATA = crerecembl.png
+icons_DATA = crerecembl-cre.png crerecembl-decre.png
 
 EXTRA_DIST = $(icons_DATA)

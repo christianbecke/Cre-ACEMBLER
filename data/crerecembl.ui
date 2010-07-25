@@ -177,6 +177,7 @@
                         <property name="visible">True</property>
                         <property name="use_action_appearance">True</property>
                         <property name="related_action">action_about</property>
+                        <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                       </object>
                     </child>
@@ -393,14 +394,14 @@
     <property name="label">_Cre</property>
     <property name="short_label">_Cre</property>
     <property name="tooltip">Recombine sequences containing loxP sites</property>
-    <property name="stock_id">gtk-execute</property>
+    <property name="stock_id">crerecembl-cre</property>
     <signal name="activate" handler="action_cre_activate_cb"/>
   </object>
   <object class="GtkAction" id="action_decre">
     <property name="label">_Decre</property>
     <property name="short_label">_Decre</property>
     <property name="tooltip">Split sequence containing multiple loxP sites</property>
-    <property name="stock_id">gtk-execute</property>
+    <property name="stock_id">crerecembl-decre</property>
     <signal name="activate" handler="action_decre_activate_cb"/>
   </object>
   <object class="GtkAction" id="action_close">
