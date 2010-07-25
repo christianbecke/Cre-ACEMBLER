@@ -18,6 +18,7 @@ setup (
 
 	data_files=[
 		"data/crerecembl.ui",
-		"data/cre_assistant.ui"
+		"data/cre_assistant.ui",
+		("icons/hicolor/48x48/apps", ["data/icons/hicolor/48x48/apps/crerecembl.png"])
 	]
 )
