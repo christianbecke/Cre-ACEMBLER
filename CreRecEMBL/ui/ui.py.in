@@ -56,6 +56,7 @@ _seq_count = 0
 _last_folder = os.path.expanduser ("~")
 
 _icon_theme_initialized = False
+_aboutdialog_initialized = False
 
 COL_SEQ_NAME = 0
 COL_SEQ_SELECTED_ACCEPTOR = 1
@@ -387,6 +388,7 @@ class SequenceView:
 		icon = self._it.load_icon ("crerecembl", 48, 0)
 		self._win.set_icon (icon)
 
+		self._aboutdialog = self._builder.get_object ("aboutdialog")
 		self._textbuffer = self._builder.get_object ("textbuffer")
 		self._action_save = self._builder.get_object ("action_save")
 		self._action_save.set_sensitive (False)
@@ -416,6 +418,39 @@ class SequenceView:
 		if ENABLE_UNINSTALLED and not _icon_theme_initialized:
 			self._it.prepend_search_path (os.path.join (DATADIR, "icons"))
 			_icon_theme_initialized = True
+	
+
+	def _init_aboutdialog (self):
+		global _aboutdialog_initialized
+
+		if not _aboutdialog_initialized:
+			self._aboutdialog.set_name ("@PACKAGE_NAME@")
+			self._aboutdialog.set_version ("@PACKAGE_VERSION@")
+			self._aboutdialog.set_copyright (
+									"Copyright © 2010 Christian Becke")
+			self._aboutdialog.set_comments (
+									"In silico loxP/Cre recombination (not "
+									"only) for MultiBac and Acembl vectors.")
+			self._aboutdialog.set_authors (
+				["Christian Becke <christianbecke@gmail.com>"])
+			self._aboutdialog.set_website ("@PACKAGE_URL@")
+			self._aboutdialog.set_logo_icon_name ("crerecembl")
+			self._aboutdialog.set_license ("@PACKAGE_NAME@ is free software: "
+					"you can redistribute it and/or modify it under the terms "
+					"of the GNU General Public License as published by the "
+					"Free Software Foundation, either version 3 of the "
+					"License, or (at your option) any later version.\n\n"
+					"@PACKAGE_NAME@ is distributed in the hope that it will be "
+					"useful, but WITHOUT ANY WARRANTY; without even the "
+					"implied warranty of MERCHANTABILITY or FITNESS FOR A "
+					"PARTICULAR PURPOSE. See the GNU General Public License "
+					"for more details.\n\n"
+					"You should have received a copy of the GNU General "
+					"Public License along with this program. If not, see "
+					"<http://www.gnu.org/licenses/>.")
+			self._aboutdialog.set_wrap_license (True)
+
+			self._aboutdialog_initialized = True
 
 
 	def get_name (self):
@@ -681,6 +716,15 @@ class SequenceView:
 		for r in res:
 			new_view = self._viewmanager.new_view ()
 			new_view.set_sequence_from_seq_record (r)
+
+
+	def action_about_activate_cb (self, *args):
+		self._init_aboutdialog ()
+		self._aboutdialog.show ()
+
+
+	def on_aboutdialog_response_cb (self, *args):
+		self._aboutdialog.hide ()
 
 
 	def textbuffer_changed_cb (self, *args):
