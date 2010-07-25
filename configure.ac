@@ -19,6 +19,8 @@ data/icons/Makefile
 data/icons/hicolor/Makefile
 data/icons/hicolor/48x48/Makefile
 data/icons/hicolor/48x48/apps/Makefile
+data/icons/hicolor/scalable/Makefile
+data/icons/hicolor/scalable/apps/Makefile
 CreRecEMBL/Makefile
 CreRecEMBL/ui/Makefile
 ])
