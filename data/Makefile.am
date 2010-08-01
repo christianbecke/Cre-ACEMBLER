@@ -1,4 +1,4 @@
-SUBDIRS = icons
+SUBDIRS = icons win32
 
 Multimediadir = $(datadir)/applications
 Multimedia_DATA = crerecembl.desktop

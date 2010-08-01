@@ -1,4 +1,4 @@
-AC_INIT([CreRecEMBL], [0.1], [christianbecke@gmail.com], [CreRecEMBL], [http://github.com/christianbecke/CreRecEMBL/])
+AC_INIT([CreRecEMBL], [0.2], [christianbecke@gmail.com], [CreRecEMBL], [http://github.com/christianbecke/CreRecEMBL/])
 AC_CONFIG_SRCDIR([CreRecEMBL/__init__.py])
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON
@@ -36,6 +36,7 @@ data/icons/hicolor/256x256/apps/Makefile
 data/icons/hicolor/scalable/Makefile
 data/icons/hicolor/scalable/actions/Makefile
 data/icons/hicolor/scalable/apps/Makefile
+data/win32/Makefile
 CreRecEMBL/Makefile
 CreRecEMBL/ui/Makefile
 ])
