@@ -209,6 +209,7 @@ class CreAssistantHandler:
 		self._sequence_list.clear ()
 		for view in views:
 			self._sequence_list.append ([view.get_name (), False, False, "1", view])
+		self._cre_assistant.set_transient_for (parent)
 		self._cre_assistant.show ()
 
 
