@@ -320,6 +320,18 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 
 		alignment.show_all ()
 		self.set_extra_widget (alignment)
+		self.connect ("response", self.on_response_cb)
+		self._allow_response_accept = False
+
+
+	def on_response_cb (self, dialog, response):
+		# hack to disallow opening a file by pressing enter or double-clicking
+		# while no file format is selected. Ideally, the "file-activated"
+		# signal should be stopped, but this does not work.
+		if response == gtk.RESPONSE_ACCEPT and not self._allow_response_accept:
+			self.emit_stop_by_name ("response")
+			return True
+		return False
 
 
 	def add_buttons (self, *args):
@@ -350,8 +362,10 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 					(name, old_ext) = os.path.splitext (filename)
 					self.set_current_name ("%s%s" % (name, ext))
 			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, True)
+			self._allow_response_accept = True
 		else:
 			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, False)
+			self._allow_response_accept = False
 
 
 	def get_file_format (self):
