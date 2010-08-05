@@ -65,9 +65,17 @@ COL_SEQ_SELECTED_DONOR = 2
 COL_SEQ_COPYNR = 3
 COL_SEQ_VIEW = 4
 
+COL_FORMAT_NAME = 0
+COL_FORMAT_DESCRIPTION = 1
+COL_FORMAT_EXTENSION = 2
+COL_FORMAT_BIOPYTHON = 3
+
+# format name (according to Biopython, if it is a Biopython format),
+# description, file extension, is this a Biopython format
 SUPPORTED_FILE_FORMATS = (
-	("fasta", "FASTA files", ".fasta"),
-	("genbank", "GenBank files", ".gbk"),
+	("txt", "Plain text files", ".txt", False),
+	("fasta", "FASTA files", ".fasta", True),
+	("genbank", "GenBank files", ".gbk", True),
 )
 
 warnings.filterwarnings ("ignore", ".*Malformed LOCUS line.*")
@@ -307,14 +315,14 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 		label.set_text ("Specify file format:")
 		box.pack_start (label, False)
 
-		self._format_list = gtk.ListStore (gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING)
+		self._format_list = gtk.ListStore (gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_BOOLEAN)
 		for format in SUPPORTED_FILE_FORMATS:
 			self._format_list.append (format)
 
 		self._format_combobox = gtk.ComboBox (model=self._format_list)
 		cr = gtk.CellRendererText ()
 		self._format_combobox.pack_start (cr, False)
-		self._format_combobox.add_attribute (cr, "text", 1)
+		self._format_combobox.add_attribute (cr, "text", COL_FORMAT_DESCRIPTION)
 		self._format_combobox.connect ("changed", self._format_combobox_changed_cb)
 		box.pack_start (self._format_combobox, False)
 
@@ -344,7 +352,7 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 			return
 		it = self._format_list.get_iter_first ()
 		while it:
-			if self._format_list.get_value (it, 0) == format:
+			if self._format_list.get_value (it, COL_FORMAT_NAME) == format:
 				self._format_combobox.set_active_iter (it)
 				break
 			it = self._format_list.iter_next (it)
@@ -356,7 +364,7 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 			action = self.get_action ()
 			if action == gtk.FILE_CHOOSER_ACTION_SAVE:
 				filename = self.get_filename ()
-				ext = self._format_list.get_value (it, 2)
+				ext = self._format_list.get_value (it, COL_FORMAT_EXTENSION)
 				if filename:
 					filename = glib.filename_display_basename (filename)
 					(name, old_ext) = os.path.splitext (filename)
@@ -369,10 +377,10 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 
 
 	def get_file_format (self):
-		ret = None
+		ret = (None, False)
 		it = self._format_combobox.get_active_iter ()
 		if it:
-			ret = self._format_list.get_value (it, 0)
+			ret = self._format_list.get (it, COL_FORMAT_NAME, COL_FORMAT_BIOPYTHON)
 		return ret
 
 gobject.type_register (CreFileChooserDialog)
@@ -522,17 +530,25 @@ class SequenceView:
 		self._update_name (name=name)
 
 
-	def _load_contents_async_cb (self, gfile, result, file_format):
+	def _load_contents_async_cb (self, gfile, result, format_data):
+		(file_format, is_biopython_format) = format_data
 		(contents, length, etag) = gfile.load_contents_finish (result)
 		self._loading = False
-		handle = StringIO.StringIO (contents)
-		records = list (SeqIO.parse (handle, file_format))
-		handle.close ()
-		if len (records) < 1:
-			msg = "Failed to open file '%s'!" % (self._get_name_from_gfile (gfile, strip_ext=False),)
-			self.show_error (msg)
-			return
-		record = records[0]
+		if is_biopython_format:
+			handle = StringIO.StringIO (contents)
+			records = list (SeqIO.parse (handle, file_format))
+			handle.close ()
+			if len (records) < 1:
+				msg = "Failed to open file '%s'!" % (self._get_name_from_gfile (gfile, strip_ext=False),)
+				self.show_error (msg)
+				return
+			record = records[0]
+		else:
+			if file_format == "txt":
+				seq = Seq (contents, generic_dna)
+				record = SeqRecord (seq)
+			else:
+				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
 		name = record.annotations.get ("CreRecEMBL_name", None)
 		if not name:
 			name = self._get_name_from_gfile (gfile)
@@ -543,9 +559,9 @@ class SequenceView:
 		self._action_save.set_sensitive (False)
 
 
-	def set_sequence_from_gfile (self, gfile, file_format):
+	def set_sequence_from_gfile (self, gfile, file_format, is_biopython_format):
 		self._loading = True
-		gfile.load_contents_async (self._load_contents_async_cb, user_data=file_format)
+		gfile.load_contents_async (self._load_contents_async_cb, user_data=(file_format, is_biopython_format))
 
 
 	def _replace_contents_async_cb (self, gfile, result):
@@ -556,15 +572,20 @@ class SequenceView:
 		self._update_name (name=name)
 
 
-	def _write_sequence_to_gfile (self, gfile, file_format):
+	def _write_sequence_to_gfile (self, gfile, file_format, is_biopython_format):
 		(start, end) = self._textbuffer.get_bounds ()
 		contents = self._textbuffer.get_text (start, end)
-		s = Seq (contents)
-		s.alphabet = generic_dna
-		srec = SeqRecord (s)
-		name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
-		srec.annotations["CreRecEMBL_name"] = name
-		seq_str = srec.format (file_format)
+		if is_biopython_format:
+			s = Seq (contents, generic_dna)
+			srec = SeqRecord (s)
+			name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
+			srec.annotations["CreRecEMBL_name"] = name
+			seq_str = srec.format (file_format)
+		else:
+			if file_format == "txt":
+				seq_str = contents
+			else:
+				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
 		gfile.replace_contents_async (seq_str, self._replace_contents_async_cb)
 
 
@@ -623,10 +644,10 @@ class SequenceView:
 		if resp == gtk.RESPONSE_ACCEPT:
 			for uri in dlg.get_uris ():
 				uris.append (uri)
-		file_format = dlg.get_file_format ()
+		(file_format, is_biopython_format) = dlg.get_file_format ()
 		_last_folder = dlg.get_current_folder ()
 		dlg.destroy ()
-		return (file_format, uris)
+		return (file_format, is_biopython_format, uris)
 
 
 	def _received_clipboard_contents_cb (self, clipboard, selection_data, user_data):
@@ -656,7 +677,7 @@ class SequenceView:
 		self._viewmanager.new_view ()
 
 
-	def _open_uris_async (self, uris, format):
+	def _open_uris_async (self, uris, format, is_biopython_format):
 		if not uris:
 			return False
 
@@ -664,31 +685,23 @@ class SequenceView:
 		gfile = gio.File (uri=uri)
 		if self._gfile or self._loading:
 			new_view = self._viewmanager.new_view ()
-			new_view.set_sequence_from_gfile (gfile, format)
+			new_view.set_sequence_from_gfile (gfile, format, is_biopython_format)
 		else:
-			self.set_sequence_from_gfile (gfile, format)
+			self.set_sequence_from_gfile (gfile, format, is_biopython_format)
 		return len (uris) > 0
 
 
 	def action_open_activate_cb (self, *args):
-		(format, uris) = self.show_filechooser ()
+		(format, is_biopython_format, uris) = self.show_filechooser ()
 		self._file_format = format
-		glib.idle_add (self._open_uris_async, uris, format)
-		return
-		for uri in uris:
-			gfile = gio.File (uri=uri)
-			if self._gfile:
-				new_view = self._viewmanager.new_view ()
-				new_view.set_sequence_from_gfile (gfile, format)
-			else:
-				self.set_sequence_from_gfile (gfile, format)
+		glib.idle_add (self._open_uris_async, uris, format, is_biopython_format)
 
 
 	def action_save_activate_cb (self, *args):
 		if not self._gfile:
 			path = os.path.join (_last_folder, self.get_name ())
 			gfile = gio.File (path=path)
-			(format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+			(format, is_biopython_format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
 												uri=gfile.get_uri ())
 			if not uris:
 				return
@@ -697,7 +710,7 @@ class SequenceView:
 
 			gfile = gio.File (uri=uris[0])
 
-		self._write_sequence_to_gfile (gfile, format)
+		self._write_sequence_to_gfile (gfile, format, is_biopython_format)
 
 
 	def action_save_as_activate_cb (self, *args):
@@ -706,14 +719,14 @@ class SequenceView:
 			gfile = gio.File (path=path)
 		else:
 			gfile = self._gfile
-		(format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+		(format, is_biopython_format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
 											uri=gfile.get_uri ())
 		if not uris:
 			return
 
 		self._file_format = format
 		gfile = gio.File (uri=uris[0])
-		self._write_sequence_to_gfile (gfile, format)
+		self._write_sequence_to_gfile (gfile, format, is_biopython_format)
 
 
 	def action_close_activate_cb (self, *args):
