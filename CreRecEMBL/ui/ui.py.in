@@ -330,6 +330,7 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 		self.set_extra_widget (alignment)
 		self.connect ("response", self.on_response_cb)
 		self._allow_response_accept = False
+		self.set_local_only (False)
 
 
 	def on_response_cb (self, dialog, response):
