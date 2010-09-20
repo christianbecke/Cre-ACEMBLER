@@ -1,6 +1,6 @@
 #!@PYTHON@
 
-# vim: encoding=utf-8 ts=4 sw=4 noexpandtab :
+# vim: fileencoding=utf-8 ts=4 sw=4 noexpandtab :
 
 # CreRecEMBL - in silico loxP/Cre recombination
 # Copyright (C) 2010 Christian Becke <christianbecke@gmail.com>
