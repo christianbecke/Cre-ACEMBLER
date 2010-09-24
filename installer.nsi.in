@@ -66,7 +66,7 @@ Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
 RMDir "$SMPROGRAMS\$StartMenuFolder"
 @DELETE_LIST@
 @RMDIR_LIST@
-Delete "$INSDIR\COPYING.txt"
+Delete "$INSTDIR\COPYING.txt"
 Delete "$INSTDIR\Uninstall.exe"
 RMDir "$INSTDIR"
 DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@PACKAGE_NAME@"
