@@ -3,6 +3,20 @@ AC_CONFIG_SRCDIR([CreRecEMBL/__init__.py])
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON
 
+AC_MSG_CHECKING([for pyGTK])
+`$PYTHON -c 'import gtk' >/dev/null 2>&1`
+AS_IF([test $? -eq 0],
+	AC_MSG_RESULT([found]),
+	AC_MSG_ERROR([please install pyGTK])
+)
+
+AC_MSG_CHECKING([for Biopython])
+`$PYTHON -c 'import Bio' >/dev/null 2>&1`
+AS_IF([test $? -eq 0],
+	AC_MSG_RESULT([found]),
+	AC_MSG_ERROR([please install Biopython])
+)
+
 AC_ARG_ENABLE([uninstalled],
 	AS_HELP_STRING([--enable-uninstalled],
 		[Enable running CreRecEMBL from the source directory])
@@ -10,6 +24,8 @@ AC_ARG_ENABLE([uninstalled],
 AS_IF([test "x$enable_uninstalled" = "xyes"],
 	[AC_SUBST(ENABLE_UNINSTALLED, [True])],
 	[AC_SUBST(ENABLE_UNINSTALLED, [False])]
+)
+AS_CASE($PYTHON_PLATFORM, [*win*], [AC_SUBST(CRERECEMBL_EXT, [.py])], [AC_SUBST(CRERECEMBL_EXT, [])]
 )
 
 AC_OUTPUT([
