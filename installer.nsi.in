@@ -44,6 +44,7 @@ SetOutPath "$INSTDIR"
 !insertmacro SetContext
 @CREATEDIR_LIST@
 @INST_LIST@
+File "/oname=COPYING.txt" "COPYING"
 WriteUninstaller "$INSTDIR\Uninstall.exe"
 
 !insertmacro MUI_STARTMENU_WRITE_BEGIN Startmenu
@@ -65,6 +66,7 @@ Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
 RMDir "$SMPROGRAMS\$StartMenuFolder"
 @DELETE_LIST@
 @RMDIR_LIST@
+Delete "$INSDIR\COPYING.txt"
 Delete "$INSTDIR\Uninstall.exe"
 RMDir "$INSTDIR"
 DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@PACKAGE_NAME@"
