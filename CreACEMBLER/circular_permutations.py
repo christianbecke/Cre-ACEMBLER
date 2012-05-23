@@ -1,7 +1,7 @@
 # vim: fileencoding=utf-8 ts=4 sw=4 noexpandtab :
 
-# CreRecEMBL - in silico loxP/Cre recombination
-# Copyright (C) 2010 Christian Becke <christianbecke@gmail.com>
+# CreACEMBLER - in silico loxP/Cre recombination
+# Copyright (C) 2010 - 2012 Christian Becke <christianbecke@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

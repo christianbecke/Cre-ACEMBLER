@@ -1,7 +1,7 @@
 # vim: fileencoding=utf-8 sw=4 ts=4 noexpandtab :
 
-# CreRecEMBL - in silico loxP/Cre recombination
-# Copyright (C) 2010 Christian Becke <christianbecke@gmail.com>
+# CreACEMBLER - in silico loxP/Cre recombination
+# Copyright (C) 2010 - 2012 Christian Becke <christianbecke@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ if ENABLE_UNINSTALLED:
 	DATADIR = os.path.join (BASEDIR, "data")
 	SEARCHPATH.insert (0, DATADIR)
 
-from CreRecEMBL import seq
+from CreACEMBLER import seq
 
 _seq_count = 0
 
@@ -159,7 +159,7 @@ class CreAssistantHandler:
 				elif seq.has_loxp_fwd_and_rev (srec):
 					view.show_error ("The sequence contains both "
 										"forward and reverse loxP sites. "
-										"CreRecEMBL does not know how to "
+										"@PACKAGE_NAME@ does not know how to "
 										"handle such sequences.")
 					break
 				srecs.append (srec)
@@ -406,12 +406,12 @@ class SequenceView:
 		self._init_icon_theme ()
 		self._init_icon_factory ()
 
-		gladefile = get_file ("crerecembl.ui")
+		gladefile = get_file ("@PACKAGE_TARNAME@.ui")
 		self._builder = gtk.Builder ()
 		self._builder.add_from_file (gladefile)
 
 		self._win = self._builder.get_object ("window")
-		icon = self._it.load_icon ("crerecembl", 48, 0)
+		icon = self._it.load_icon ("@PACKAGE_TARNAME@", 48, 0)
 		self._win.set_icon (icon)
 
 		self._aboutdialog = self._builder.get_object ("aboutdialog")
@@ -443,7 +443,7 @@ class SequenceView:
 
 		if not _icon_factory:
 			_icon_factory = gtk.IconFactory ()
-			for icon_name in ["crerecembl-cre", "crerecembl-decre"]:
+			for icon_name in ["@PACKAGE_TARNAME@-cre", "@PACKAGE_TARNAME@-decre"]:
 				icon_source = gtk.IconSource ()
 				icon_source.set_icon_name (icon_name)
 				icon_source.set_direction_wildcarded (True)
@@ -470,14 +470,14 @@ class SequenceView:
 			self._aboutdialog.set_name ("@PACKAGE_NAME@")
 			self._aboutdialog.set_version ("@PACKAGE_VERSION@")
 			self._aboutdialog.set_copyright (
-									"Copyright © 2010 Christian Becke")
+									"Copyright © 2010 - 2012 Christian Becke")
 			self._aboutdialog.set_comments (
-									"In silico loxP/Cre recombination (not "
-									"only) for MultiBac and Acembl vectors.")
+									"In silico Cre-loxP recombination for "
+									"the MultiBac, MultiMam and MultiColi systems.")
 			self._aboutdialog.set_authors (
-				["Christian Becke <christianbecke@gmail.com>"])
+				["Christian Becke <@PACKAGE_BUGREPORT@>"])
 			self._aboutdialog.set_website ("@PACKAGE_URL@")
-			self._aboutdialog.set_logo_icon_name ("crerecembl")
+			self._aboutdialog.set_logo_icon_name ("@PACKAGE_TARNAME@")
 			self._aboutdialog.set_license ("@PACKAGE_NAME@ is free software: "
 					"you can redistribute it and/or modify it under the terms "
 					"of the GNU General Public License as published by the "
@@ -509,7 +509,7 @@ class SequenceView:
 			_seq_count += 1
 			self._name = "Sequence %d" % (_seq_count,)
 
-		self._win.set_title ("%s - CreRecEMBL" % (self._name,))
+		self._win.set_title ("%s - @PACKAGE_NAME@" % (self._name,))
 
 
 	def _get_name_from_gfile (self, gfile, attribute=gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, strip_ext=True):
@@ -527,7 +527,7 @@ class SequenceView:
 
 	def set_sequence_from_seq_record (self, seq_record):
 		self._textbuffer.set_text (str (seq_record.seq))
-		name = seq_record.annotations.get ("CreRecEMBL_name", None)
+		name = seq_record.annotations.get (seq.CREACEMBLER_TAG, None)
 		self._update_name (name=name)
 
 
@@ -550,10 +550,10 @@ class SequenceView:
 				record = SeqRecord (seq)
 			else:
 				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
-		name = record.annotations.get ("CreRecEMBL_name", None)
+		name = record.annotations.get (seq.CREACEMBLER_TAG, None)
 		if not name:
 			name = self._get_name_from_gfile (gfile)
-			record.annotations["CreRecEMBL_name"] = name
+			record.annotations[seq.CREACEMBLER_TAG] = name
 		self.set_sequence_from_seq_record (record)
 		self._gfile = gfile
 		self._file_format = file_format
@@ -580,7 +580,7 @@ class SequenceView:
 			s = Seq (contents, generic_dna)
 			srec = SeqRecord (s)
 			name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
-			srec.annotations["CreRecEMBL_name"] = name
+			srec.annotations[seq.CREACEMBLER_TAG] = name
 			seq_str = srec.format (file_format)
 		else:
 			if file_format == "txt":
@@ -596,7 +596,7 @@ class SequenceView:
 		s = Seq (text)
 		s.alphabet = generic_dna
 		srec = SeqRecord (s)
-		srec.annotations["CreRecEMBL_name"] = self.get_name ()
+		srec.annotations[seq.CREACEMBLER_TAG] = self.get_name ()
 		return srec
 
 

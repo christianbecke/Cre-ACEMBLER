@@ -107,110 +107,114 @@ GTK_DATA_FILES = [
 	),
 ]
 
-CRERECEMBL_DATA_FILES = [
-	"data/crerecembl.ui",
+CREACEMBLER_DATA_FILES = [
+	"data/@PACKAGE_TARNAME@.ui",
 	"data/cre_assistant.ui",
 	(
 		"share/icons/hicolor", [
-			"data/win32/index.theme",
+			os.path.join (GTK_BUNDLE, "share", "icons", "hicolor", "index.theme"),
 		]
 	),
 
 	(
 		"share/icons/hicolor/16x16/apps", [
-			"data/icons/hicolor/16x16/apps/crerecembl.png",
+			"data/icons/hicolor/16x16/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/16x16/actions", [
-			"data/icons/hicolor/16x16/actions/crerecembl-decre.png",
-			"data/icons/hicolor/16x16/actions/crerecembl-cre.png",
+			"data/icons/hicolor/16x16/actions/@PACKAGE_TARNAME@-decre.png",
+			"data/icons/hicolor/16x16/actions/@PACKAGE_TARNAME@-cre.png",
 		]
 	),
 
 	(	"share/icons/hicolor/22x22/apps", [
-			"data/icons/hicolor/22x22/apps/crerecembl.png",
+			"data/icons/hicolor/22x22/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/22x22/actions", [
-			"data/icons/hicolor/22x22/actions/crerecembl-decre.png",
-			"data/icons/hicolor/22x22/actions/crerecembl-cre.png",
+			"data/icons/hicolor/22x22/actions/@PACKAGE_TARNAME@-decre.png",
+			"data/icons/hicolor/22x22/actions/@PACKAGE_TARNAME@-cre.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/24x24/apps", [
-			"data/icons/hicolor/24x24/apps/crerecembl.png",
+			"data/icons/hicolor/24x24/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/24x24/actions", [
-			"data/icons/hicolor/24x24/actions/crerecembl-decre.png",
-			"data/icons/hicolor/24x24/actions/crerecembl-cre.png",
+			"data/icons/hicolor/24x24/actions/@PACKAGE_TARNAME@-decre.png",
+			"data/icons/hicolor/24x24/actions/@PACKAGE_TARNAME@-cre.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/32x32/apps", [
-			"data/icons/hicolor/32x32/apps/crerecembl.png",
+			"data/icons/hicolor/32x32/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/32x32/actions", [
-			"data/icons/hicolor/32x32/actions/crerecembl-decre.png",
-			"data/icons/hicolor/32x32/actions/crerecembl-cre.png",
+			"data/icons/hicolor/32x32/actions/@PACKAGE_TARNAME@-decre.png",
+			"data/icons/hicolor/32x32/actions/@PACKAGE_TARNAME@-cre.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/48x48/apps", [
-			"data/icons/hicolor/48x48/apps/crerecembl.png",
+			"data/icons/hicolor/48x48/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/64x64/apps", [
-			"data/icons/hicolor/64x64/apps/crerecembl.png",
+			"data/icons/hicolor/64x64/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/128x128/apps", [
-			"data/icons/hicolor/128x128/apps/crerecembl.png",
+			"data/icons/hicolor/128x128/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/256x256/apps", [
-			"data/icons/hicolor/256x256/apps/crerecembl.png",
+			"data/icons/hicolor/256x256/apps/@PACKAGE_TARNAME@.png",
 		]
 	),
 
 	(
 		"share/icons/hicolor/scalable/actions", [
-			"data/icons/hicolor/scalable/actions/crerecembl-cre.svg",
-			"data/icons/hicolor/scalable/actions/crerecembl-decre.svg",
+			"data/icons/hicolor/scalable/actions/@PACKAGE_TARNAME@-cre.svg",
+			"data/icons/hicolor/scalable/actions/@PACKAGE_TARNAME@-decre.svg",
 		]
 	),
 ]
 
 WIN32_DATA_FILES = [
 	"data/win32/Microsoft.VC90.CRT.manifest",
+	"data/win32/msvcm90.dll",
+	"data/win32/msvcp90.dll",
 	"data/win32/msvcr90.dll",
 ]
 
 setup (
 	name="@PACKAGE_NAME@",
 	version="@PACKAGE_VERSION@",
+	author="Christian Becke",
+	author_email="@PACKAGE_BUGREPORT@",
 	windows=[
 		{
-			"script": "crerecembl.py",
-			"icon_resources": [(1, "data/win32/crerecembl.ico")],
+			"script": "@PACKAGE_TARNAME@.py",
+			"icon_resources": [(1, "data/win32/@PACKAGE_TARNAME@.ico")],
 		}
 	],
 
@@ -220,5 +224,5 @@ setup (
 		}
 	},
 
-	data_files=WIN32_DATA_FILES + GTK_DATA_FILES + CRERECEMBL_DATA_FILES,
+	data_files=WIN32_DATA_FILES + GTK_DATA_FILES + CREACEMBLER_DATA_FILES,
 )

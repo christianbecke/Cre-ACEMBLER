@@ -1,1 +1,6 @@
-EXTRA_DIST = crerecembl.ico index.theme Microsoft.VC90.CRT.manifest msvcr90.dll
+EXTRA_DIST = \
+	Microsoft.VC90.CRT.manifest \
+	msvcm90.dll \
+	msvcp90.dll \
+	msvcr90.dll \
+	$(PACKAGE_TARNAME).ico

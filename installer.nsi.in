@@ -25,7 +25,7 @@ Var StartMenuFolder
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_STARTMENU Startmenu $StartMenuFolder
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_RUN "$INSTDIR\crerecembl.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\@PACKAGE_TARNAME@.exe"
 !define MUI_FINISHPAGE_RUN_NOTCHECKED
 !insertmacro MUI_PAGE_FINISH
 
@@ -36,7 +36,7 @@ Var StartMenuFolder
 !insertmacro MUI_LANGUAGE "English"
 
 Name "@PACKAGE_NAME@"
-Outfile "@PACKAGE_NAME@-@PACKAGE_VERSION@_win32_installer.exe"
+Outfile "@PACKAGE_TARNAME@-@PACKAGE_VERSION@_win32_installer.exe"
 InstallDir "$PROGRAMFILES\@PACKAGE_NAME@-@PACKAGE_VERSION@"
 
 Section "Install"
@@ -49,7 +49,7 @@ WriteUninstaller "$INSTDIR\Uninstall.exe"
 
 !insertmacro MUI_STARTMENU_WRITE_BEGIN Startmenu
 CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-CreateShortCut "$SMPROGRAMS\$StartMenuFolder\@PACKAGE_NAME@.lnk" "$INSTDIR\crerecembl.exe"
+CreateShortCut "$SMPROGRAMS\$StartMenuFolder\@PACKAGE_NAME@.lnk" "$INSTDIR\@PACKAGE_TARNAME@.exe"
 CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 !insertmacro MUI_STARTMENU_WRITE_END
 

@@ -1,7 +1,10 @@
-AC_INIT([CreRecEMBL], [1.0], [christianbecke@gmail.com], [CreRecEMBL], [http://github.com/christianbecke/CreRecEMBL/])
-AC_CONFIG_SRCDIR([CreRecEMBL/__init__.py])
+AC_INIT([Cre-ACEMBLER], [1.0], [christian.becke@fu-berlin.de], [cre-acembler], [http://github.com/christianbecke/Cre-ACEMBLER/])
+AC_CONFIG_SRCDIR([CreACEMBLER/__init__.py])
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON
+
+AC_PROG_AWK
+AC_PROG_SED
 
 AC_MSG_CHECKING([for pyGTK])
 `$PYTHON -c 'import gtk' >/dev/null 2>&1`
@@ -19,14 +22,16 @@ AS_IF([test $? -eq 0],
 
 AC_ARG_ENABLE([uninstalled],
 	AS_HELP_STRING([--enable-uninstalled],
-		[Enable running CreRecEMBL from the source directory])
+		[Enable running Cre-ACEMBLER from the source directory])
 )
 AS_IF([test "x$enable_uninstalled" = "xyes"],
 	[AC_SUBST(ENABLE_UNINSTALLED, [True])],
 	[AC_SUBST(ENABLE_UNINSTALLED, [False])]
 )
-AS_CASE($PYTHON_PLATFORM, [*win*], [AC_SUBST(CRERECEMBL_EXT, [.py])], [AC_SUBST(CRERECEMBL_EXT, [])]
+AS_CASE($PYTHON_PLATFORM, [*win*], [AC_SUBST(CREACEMBLER_EXT, [.py])], [AC_SUBST(CREACEMBLER_EXT, [])]
 )
+
+AC_SUBST(pkgpythondir, $pythondir/CreACEMBLER)
 
 AC_OUTPUT([
 Makefile
@@ -56,7 +61,7 @@ data/icons/hicolor/128x128/apps/Makefile
 data/icons/hicolor/scalable/Makefile
 data/icons/hicolor/scalable/actions/Makefile
 data/win32/Makefile
-CreRecEMBL/Makefile
-CreRecEMBL/ui/Makefile
+CreACEMBLER/Makefile
+CreACEMBLER/ui/Makefile
 ])
 

@@ -1,7 +1,7 @@
 # vim: fileencoding=utf-8 ts=4 sw=4 noexpandtab :
 
-# CreRecEMBL - in silico loxP/Cre recombination
-# Copyright (C) 2010 Christian Becke <christianbecke@gmail.com>
+# CreACEMBLER - in silico loxP/Cre recombination
+# Copyright (C) 2010 - 2012 Christian Becke <christianbecke@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ from circular_permutations import circular_permutations
 
 LOXPFWD = "ATAACTTCGTATAGCATACATTATACGAAGTTAT"
 LOXPREV = "ATAACTTCGTATAATGTATGCTATACGAAGTTAT"
+
+CREACEMBLER_TAG = "CreACEMBLER_name"
 
 class SequenceError (Exception):
 
@@ -74,13 +76,13 @@ def cre (*args):
 			srec = in_srecs[index]
 			i += 1
 			s += srec.seq
-			name = srec.annotations.get ("CreRecEMBL_name", None)
+			name = srec.annotations.get (CREACEMBLER_TAG, None)
 			if not name:
 				name = "seq%02d" % (i,)
 			names.append (name)
 		s.alphabet = generic_dna
 		combined_srec = SeqRecord (s)
-		combined_srec.annotations["CreRecEMBL_name"] = "_x_".join (names)
+		combined_srec.annotations[CREACEMBLER_TAG] = "_x_".join (names)
 		out_srecs.append (combined_srec)
 	return out_srecs
 
@@ -102,7 +104,7 @@ def decre (srec):
 		raise NoLoxSite (srec)
 
 	out = []
-	original_name = srec.annotations.get ("CreRecEMBL_name", "seq")
+	original_name = srec.annotations.get (CREACEMBLER_TAG, "seq")
 	count = 0
 	parts = srec.seq.upper ().split (sep)
 	parts[-1] += parts[0]
@@ -118,6 +120,6 @@ def decre (srec):
 			 name = "%s%02d" % (original_name, count)
 		else:
 			name = original_name
-		srec.annotations["CreRecEMBL_name"] = name
+		srec.annotations[CREACEMBLER_TAG] = name
 		out.append (srec)
 	return out

@@ -4,7 +4,7 @@ context = actions
 
 iconsdir = $(themedir)/$(size)/$(context)
 
-icons_DATA = crerecembl-cre.svg crerecembl-decre.svg
+icons_DATA = $(PACKAGE_TARNAME)-cre.svg $(PACKAGE_TARNAME)-decre.svg
 
 EXTRA_DIST = $(icons_DATA)
 

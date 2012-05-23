@@ -1,39 +1,37 @@
-SUBDIRS = CreRecEMBL data
+SUBDIRS = CreACEMBLER data
 
-bin_SCRIPTS = crerecembl$(CRERECEMBL_EXT)
+bin_SCRIPTS = $(PACKAGE_TARNAME)$(CREACEMBLER_EXT)
 
-CLEANFILES = crerecembl$(CRERECEMBL_EXT) setup.py installer.nsi installer.nsi.tmp inst_list.sed createdir_list.sed rmdir_list.sed delete_list.sed
-EXTRA_DIST = crerecembl.in setup.py.in installer.nsi.in
-BUILT_SOURCES = crerecembl$(CRERECEMBL_EXT) setup.py
+CLEANFILES = $(PACKAGE_TARNAME)$(CREACEMBLER_EXT) setup.py installer.nsi installer.nsi.tmp inst_list.sed createdir_list.sed rmdir_list.sed delete_list.sed
+EXTRA_DIST = $(PACKAGE_TARNAME).in setup.py.in installer.nsi.in
+BUILT_SOURCES = $(PACKAGE_TARNAME)$(CREACEMBLER_EXT) setup.py
 
-edit = sed -e 's,@PYTHON[@],$(PYTHON),g' \
-		-e 's,@PACKAGE_NAME[@],$(PACKAGE_NAME),g' \
-		-e 's,@PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
+include $(top_srcdir)/edit.mak
 
 inst_list_sed = { test ! -d "dist" \
 	|| { cd "dist" \
 	&& find * -type f | \
-	awk 'BEGIN { printf "s,@INST_LIST[@]," } \
+	$(AWK) 'BEGIN { printf "s,@INST_LIST[@]," } \
 	{ gsub("/", "\\\\"); printf "File \"/oname=" $$0 "\" \"dist\\\\" $$0 "\"\\n" } \
 	END { printf ",g\n" }'; }; }
 
 delete_list_sed = { test ! -d "dist" \
 	|| { cd "dist" \
 	&& find * -type f | \
-	awk 'BEGIN { printf "s,@DELETE_LIST[@]," } \
+	$(AWK) 'BEGIN { printf "s,@DELETE_LIST[@]," } \
 	{ gsub("/", "\\\\"); printf "Delete \"\\$$INSTDIR\\\\" $$0 "\"\\n" } \
 	END { printf ",g\n" }'; }; }
 
 createdir_list_sed = { test ! -d "dist" \
 	|| { cd "dist" \
 	&& find * -type d | \
-	awk '{ gsub("/", "\\\\"); a[i++]="CreateDirectory \"\\$$INSTDIR\\\\" $$0 "\"\\n" } \
+	$(AWK) '{ gsub("/", "\\\\"); a[i++]="CreateDirectory \"\\$$INSTDIR\\\\" $$0 "\"\\n" } \
 	END { printf "s,@CREATEDIR_LIST[@],"; for (j=i-1; j>=0;) printf a[j--]; printf ",g\n" }'; }; }
 
 rmdir_list_sed = { test ! -d "dist" \
 	|| { cd "dist" \
 	&& find * -type d | \
-	awk '{ gsub("/", "\\\\"); a[i++]="RMDir \"\\$$INSTDIR\\\\" $$0 "\"\\n" } \
+	$(AWK) '{ gsub("/", "\\\\"); a[i++]="RMDir \"\\$$INSTDIR\\\\" $$0 "\"\\n" } \
 	END { printf "s,@RMDIR_LIST[@],"; for (j=i-1; j>=0;) printf a[j--]; printf ",g\n" }'; }; }
 
 remove_py2exe_distdir =  { test ! -d "dist" \
@@ -45,9 +43,9 @@ remove_py2exe_builddir =  { test ! -d "build" \
          && rm -fr "build"; }; }
 
 
-crerecembl$(CRERECEMBL_EXT): Makefile
+$(PACKAGE_TARNAME)$(CREACEMBLER_EXT): Makefile
 	rm -f $@ $@.tmp
-	$(edit) < '$(srcdir)/crerecembl.in' > $@.tmp
+	$(edit) < '$(srcdir)/$(PACKAGE_TARNAME).in' > $@.tmp
 	chmod 0755 $@.tmp
 	mv $@.tmp $@
 
@@ -73,11 +71,11 @@ rmdir_list.sed: py2exe
 
 installer.nsi: inst_list.sed delete_list.sed createdir_list.sed rmdir_list.sed installer.nsi.in
 	$(edit) < '$(srcdir)/$@.in' > $@.tmp
-	sed -f inst_list.sed -f delete_list.sed -f createdir_list.sed -f rmdir_list.sed < $@.tmp > $@
+	$(SED) -f inst_list.sed -f delete_list.sed -f createdir_list.sed -f rmdir_list.sed < $@.tmp > $@
 	rm -f $@.tmp
 
 win-installer: installer.nsi
 	makensis installer.nsi
 
-crerecembl$(CRERECEMBL_EXT): crerecembl.in
+$(PACKAGE_TARNAME)$(CREACEMBLER_EXT): $(PACKAGE_TARNAME).in
 setup.py: setup.py.in

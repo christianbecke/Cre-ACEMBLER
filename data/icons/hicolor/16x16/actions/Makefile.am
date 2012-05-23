@@ -4,6 +4,6 @@ context = actions
 
 iconsdir = $(themedir)/$(size)/$(context)
 
-icons_DATA = crerecembl-cre.png crerecembl-decre.png
+icons_DATA = $(PACKAGE_TARNAME)-cre.png $(PACKAGE_TARNAME)-decre.png
 
 EXTRA_DIST = $(icons_DATA)

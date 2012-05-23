@@ -4,6 +4,6 @@ context = apps
 
 iconsdir = $(themedir)/$(size)/$(context)
 
-icons_DATA = crerecembl.png
+icons_DATA = $(PACKAGE_TARNAME).png
 
 EXTRA_DIST = $(icons_DATA)
