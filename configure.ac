@@ -1,4 +1,4 @@
-AC_INIT([Cre-ACEMBLER], [1.0], [christian.becke@fu-berlin.de], [cre-acembler], [http://github.com/christianbecke/Cre-ACEMBLER/])
+AC_INIT([Cre-ACEMBLER], [1.0.1], [christian.becke@fu-berlin.de], [cre-acembler], [http://github.com/christianbecke/Cre-ACEMBLER/])
 AC_CONFIG_SRCDIR([CreACEMBLER/__init__.py])
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON
