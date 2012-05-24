@@ -3,7 +3,9 @@ autom4te.cache
 config.log
 config.status
 configure
-crerecembl
+cre-acembler
+cre-acembler.desktop
+cre-acembler.py
 install-sh
 Makefile
 Makefile.in
