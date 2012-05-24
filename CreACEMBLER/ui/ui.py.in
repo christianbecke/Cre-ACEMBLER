@@ -546,8 +546,8 @@ class SequenceView:
 			record = records[0]
 		else:
 			if file_format == "txt":
-				seq = Seq (contents, generic_dna)
-				record = SeqRecord (seq)
+				s = Seq (contents, generic_dna)
+				record = SeqRecord (s)
 			else:
 				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
 		name = record.annotations.get (seq.CREACEMBLER_TAG, None)

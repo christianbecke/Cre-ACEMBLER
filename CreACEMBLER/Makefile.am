@@ -4,3 +4,4 @@ pkgpython_PYTHON = \
 			circular_permutations.py \
 			seq.py
 
+CLEANFILES = $(pkgpython_PYTHON:%.py=%.pyc)

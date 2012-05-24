@@ -3,7 +3,7 @@ ui_PYTHON = \
 		__init__.py \
 		ui.py
 
-CLEANFILES = ui.py
+CLEANFILES = ui.py $(ui_PYTHON:%.py=%.pyc)
 EXTRA_DIST = ui.py.in
 BUILT_SOURCES = ui.py
 
