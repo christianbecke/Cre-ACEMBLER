@@ -70,7 +70,7 @@ class circular_tuple (tuple):
 				break
 			best.append (index)
 		
-		for i in xrange (len (t) - 1):
+		for i in range (len (t) - 1):
 			best_index = self._find_best (t, best, -(i + 1))
 			if best_index is not None:
 				break

@@ -28,10 +28,7 @@ import gobject
 import gio
 import gtk
 
-try:
-	import cStringIO as StringIO
-except ImportError:
-	import StringIO
+import io
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -197,7 +194,7 @@ class CreAssistantHandler:
 
 	def _cre_assistant_set_following_pages_complete (self, page, complete):
 		change = False
-		for i in xrange (self._cre_assistant.get_n_pages ()):
+		for i in range (self._cre_assistant.get_n_pages ()):
 			p = self._cre_assistant.get_nth_page (i)
 
 			if not p:
@@ -231,10 +228,10 @@ class CreAssistantHandler:
 								COL_SEQ_COPYNR,
 								COL_SEQ_VIEW)
 			if is_acceptor:
-				for i in xrange (int (copynr)):
+				for i in range (int (copynr)):
 					selected_views.insert (-1, view)
 			elif is_donor:
-				for i in xrange (int (copynr)):
+				for i in range (int (copynr)):
 					selected_views.append (view)
 			it = self._sequence_list.iter_next (it)
 		self._do_cre (selected_views)
@@ -536,7 +533,7 @@ class SequenceView:
 		(contents, length, etag) = gfile.load_contents_finish (result)
 		self._loading = False
 		if is_biopython_format:
-			handle = StringIO.StringIO (contents)
+			handle = io.StringIO (contents)
 			records = list (SeqIO.parse (handle, file_format))
 			handle.close ()
 			if len (records) < 1:
@@ -549,7 +546,7 @@ class SequenceView:
 				s = Seq (contents, generic_dna)
 				record = SeqRecord (s)
 			else:
-				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
+				raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
 		name = record.annotations.get (seq.CREACEMBLER_TAG, None)
 		if not name:
 			name = self._get_name_from_gfile (gfile)
@@ -586,7 +583,7 @@ class SequenceView:
 			if file_format == "txt":
 				seq_str = contents
 			else:
-				raise NotImplementedError, "File format '%s' not implemented!" % (file_format,)
+				raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
 		gfile.replace_contents_async (seq_str, self._replace_contents_async_cb)
 
 
@@ -827,7 +824,7 @@ class ViewManager (gobject.GObject):
 		if pspec.name == "sequence-count":
 			return len (self._views)
 		else:
-			raise AttributeError, "unknown property '%s'" % (pspec.name,)
+			raise AttributeError ("unknown property '%s'" % (pspec.name,))
 
 
 	def new_view (self):

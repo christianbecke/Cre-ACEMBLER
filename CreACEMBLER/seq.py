@@ -21,7 +21,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 
-from circular_permutations import circular_permutations
+from .circular_permutations import circular_permutations
 
 LOXPFWD = "ATAACTTCGTATAGCATACATTATACGAAGTTAT"
 LOXPREV = "ATAACTTCGTATAATGTATGCTATACGAAGTTAT"
@@ -61,9 +61,9 @@ def cre (*args):
 
 	seen_seqs = {}
 	index_list = []
-	for i in xrange (len (in_srecs)):
+	for i in range (len (in_srecs)):
 		k = str (in_srecs[i].seq)
-		if not seen_seqs.has_key (k):
+		if k not in seen_seqs:
 			seen_seqs[k] = i
 		index_list.append (seen_seqs[k])
 
