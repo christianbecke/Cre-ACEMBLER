@@ -33,7 +33,7 @@ AS_CASE($PYTHON_PLATFORM, [*win*], [AC_SUBST(CREACEMBLER_EXT, [.py])], [AC_SUBST
 
 AC_SUBST(pkgpythondir, $pythondir/CreACEMBLER)
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 Makefile
 data/Makefile
 data/icons/Makefile
@@ -64,4 +64,5 @@ data/win32/Makefile
 CreACEMBLER/Makefile
 CreACEMBLER/ui/Makefile
 ])
+AC_OUTPUT
 
