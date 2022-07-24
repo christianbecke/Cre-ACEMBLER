@@ -6,11 +6,11 @@ AM_PATH_PYTHON
 AC_PROG_AWK
 AC_PROG_SED
 
-AC_MSG_CHECKING([for pyGTK])
-`$PYTHON -c 'import gtk' >/dev/null 2>&1`
+AC_MSG_CHECKING([for Gtk-3.0 python bindings])
+`$PYTHON -c "import gi; gi.require_version('Gtk', '3.0'); from gi.repository import Gtk" >/dev/null 2>&1`
 AS_IF([test $? -eq 0],
 	AC_MSG_RESULT([found]),
-	AC_MSG_ERROR([please install pyGTK])
+	AC_MSG_ERROR([please install Gtk-3.0 python bindings])
 )
 
 AC_MSG_CHECKING([for Biopython])

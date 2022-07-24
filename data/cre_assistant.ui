@@ -1,8 +1,9 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.20.0 -->
 <interface>
-  <requires lib="gtk+" version="2.16"/>
-  <!-- interface-naming-policy project-wide -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkAssistant" id="cre_assistant">
+    <property name="can_focus">False</property>
     <property name="border_width">12</property>
     <property name="title" translatable="yes">Cre assistant</property>
     <property name="modal">True</property>
@@ -12,10 +13,10 @@
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="skip_pager_hint">True</property>
-    <signal name="apply" handler="cre_assistant_apply_cb"/>
-    <signal name="prepare" handler="cre_assistant_prepare_cb"/>
-    <signal name="cancel" handler="cre_assistant_cancel_cb"/>
-    <signal name="close" handler="cre_assistant_close_cb"/>
+    <signal name="apply" handler="cre_assistant_apply_cb" swapped="no"/>
+    <signal name="cancel" handler="cre_assistant_cancel_cb" swapped="no"/>
+    <signal name="close" handler="cre_assistant_close_cb" swapped="no"/>
+    <signal name="prepare" handler="cre_assistant_prepare_cb" swapped="no"/>
     <child>
       <placeholder/>
     </child>
@@ -31,16 +32,18 @@
     <child>
       <object class="GtkVBox" id="page_choose_acceptor">
         <property name="visible">True</property>
-        <property name="orientation">vertical</property>
+        <property name="can_focus">False</property>
         <child>
           <placeholder/>
         </child>
         <child>
           <object class="GtkComboBox" id="acceptor_combobox">
             <property name="visible">True</property>
-            <signal name="changed" handler="acceptor_combobox_changed_cb"/>
+            <property name="can_focus">False</property>
+            <signal name="changed" handler="acceptor_combobox_changed_cb" swapped="no"/>
           </object>
           <packing>
+            <property name="expand">True</property>
             <property name="fill">False</property>
             <property name="position">1</property>
           </packing>
@@ -48,52 +51,60 @@
       </object>
       <packing>
         <property name="title" translatable="yes">Choose acceptor sequence</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkVBox" id="page_choose_donor">
         <property name="visible">True</property>
-        <property name="orientation">vertical</property>
+        <property name="can_focus">False</property>
         <child>
           <object class="GtkScrolledWindow" id="scrolledwindow3">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="hscrollbar_policy">automatic</property>
-            <property name="vscrollbar_policy">automatic</property>
             <child>
               <object class="GtkTreeView" id="donor_treeview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection"/>
+                </child>
               </object>
             </child>
           </object>
           <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
         </child>
       </object>
       <packing>
         <property name="title" translatable="yes">Choose donor sequences</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkVBox" id="page_copy_numbers">
         <property name="visible">True</property>
-        <property name="orientation">vertical</property>
+        <property name="can_focus">False</property>
         <child>
           <object class="GtkScrolledWindow" id="scrolledwindow4">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="hscrollbar_policy">automatic</property>
-            <property name="vscrollbar_policy">automatic</property>
             <child>
               <object class="GtkTreeView" id="copynumber_treeview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection"/>
+                </child>
               </object>
             </child>
           </object>
           <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -101,6 +112,15 @@
       <packing>
         <property name="page_type">confirm</property>
         <property name="title" translatable="yes">Adjust copy numbers</property>
+        <property name="has_padding">False</property>
+      </packing>
+    </child>
+    <child internal-child="action_area">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+      </object>
+      <packing>
+        <property name="has_padding">False</property>
       </packing>
     </child>
   </object>

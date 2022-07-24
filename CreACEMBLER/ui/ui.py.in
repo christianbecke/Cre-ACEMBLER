@@ -23,10 +23,13 @@ import warnings
 
 import math
 
-import glib
-import gobject
-import gio
-import gtk
+import gi
+gi.require_version ('Gtk', '3.0')
+from gi.repository import GObject
+from gi.repository import Gio
+from gi.repository import Gtk
+from gi.repository import GLib
+from gi.repository import Gdk
 
 import io
 
@@ -99,16 +102,16 @@ class CreAssistantHandler:
 		self._viewmanager = viewmanager
 		self._parent = None
 
-		self._builder = gtk.Builder ()
+		self._builder = Gtk.Builder ()
 		gladefile = get_file ("cre_assistant.ui")
 		self._builder.add_from_file (gladefile)
 		self._cre_assistant = self._builder.get_object ("cre_assistant")
 
-		self._sequence_list = gtk.ListStore (gobject.TYPE_STRING, # name
-									gobject.TYPE_BOOLEAN,	# selected as acceptor vector
-									gobject.TYPE_BOOLEAN,	# selected as donor vector
-									gobject.TYPE_STRING,	# copy number
-									gobject.TYPE_PYOBJECT)	# view object
+		self._sequence_list = Gtk.ListStore (GObject.TYPE_STRING, # name
+									GObject.TYPE_BOOLEAN,	# selected as acceptor vector
+									GObject.TYPE_BOOLEAN,	# selected as donor vector
+									GObject.TYPE_STRING,	# copy number
+									GObject.TYPE_PYOBJECT)	# view object
 		self._donor_filter = self._sequence_list.filter_new ()
 		self._donor_filter.set_visible_func (self._donor_filter_visible_func)
 		self._copynumber_filter = self._sequence_list.filter_new ()
@@ -116,30 +119,30 @@ class CreAssistantHandler:
 
 		self._acceptor_combobox = self._builder.get_object ("acceptor_combobox")
 		self._acceptor_combobox.set_model (self._sequence_list)
-		cr = gtk.CellRendererText ()
+		cr = Gtk.CellRendererText ()
 		self._acceptor_combobox.pack_start (cr, True)
 		self._acceptor_combobox.add_attribute (cr, "text", COL_SEQ_NAME)
 
 		self._donor_treeview = self._builder.get_object ("donor_treeview")
 		self._donor_treeview.set_model (self._donor_filter)
-		cr = gtk.CellRendererToggle ()
+		cr = Gtk.CellRendererToggle ()
 		cr.connect ("toggled", self.cell_renderer_toggle_toggled_cb)
-		col = gtk.TreeViewColumn (None, cr, active=COL_SEQ_SELECTED_DONOR)
+		col = Gtk.TreeViewColumn (None, cr, active=COL_SEQ_SELECTED_DONOR)
 		self._donor_treeview.append_column (col)
-		cr = gtk.CellRendererText ()
-		col = gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
+		cr = Gtk.CellRendererText ()
+		col = Gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
 		self._donor_treeview.append_column (col)
 
 		self._copynumber_treeview = self._builder.get_object ("copynumber_treeview")
 		self._copynumber_treeview.set_model (self._copynumber_filter)
-		cr = gtk.CellRendererText ()
-		col = gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
+		cr = Gtk.CellRendererText ()
+		col = Gtk.TreeViewColumn ("Plasmid", cr, text=COL_SEQ_NAME)
 		self._copynumber_treeview.append_column (col)
-		cr = gtk.CellRendererSpin ()
+		cr = Gtk.CellRendererSpin ()
 		cr.connect ("edited", self.cell_renderer_spin_edited_cb)
-		cr.set_property ("adjustment", gtk.Adjustment (value=1, lower=1, upper=10, step_incr=1))
+		cr.set_property ("adjustment", Gtk.Adjustment (value=1, lower=1, upper=10, step_incr=1))
 		cr.set_property ("editable", True)
-		col = gtk.TreeViewColumn ("Copies", cr, text=COL_SEQ_COPYNR)
+		col = Gtk.TreeViewColumn ("Copies", cr, text=COL_SEQ_COPYNR)
 		self._copynumber_treeview.append_column (col)
 
 		self._builder.connect_signals (self)
@@ -168,14 +171,14 @@ class CreAssistantHandler:
 										srec_count, n_windows)
 				msg += " This means %d new windows will be opened." % (n_windows,)
 				msg += " Proceed anyways?"
-				dlg = gtk.MessageDialog (
+				dlg = Gtk.MessageDialog (
 									parent=self._parent,
-									flags=gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-									type=gtk.MESSAGE_QUESTION,
-									buttons=gtk.BUTTONS_YES_NO,
+									flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+									type=Gtk.MessageType.QUESTION,
+									buttons=Gtk.ButtonsType.YES_NO,
 									message_format=msg)
 				resp = dlg.run ()
-				if resp != gtk.RESPONSE_YES:
+				if resp != Gtk.ResponseType.YES:
 					return
 			res = seq.cre (*srecs)
 			for r in res:
@@ -183,11 +186,11 @@ class CreAssistantHandler:
 				new_view.set_sequence_from_seq_record (r)
 
 
-	def _donor_filter_visible_func (self, model, it):
+	def _donor_filter_visible_func (self, model, it, data):
 		return not model.get_value (it, COL_SEQ_SELECTED_ACCEPTOR)
 
 
-	def _copynumber_filter_visible_func (self, model, it):
+	def _copynumber_filter_visible_func (self, model, it, data):
 		return model.get_value (it, COL_SEQ_SELECTED_ACCEPTOR) or model.get_value (it, COL_SEQ_SELECTED_DONOR)
 
 
@@ -287,61 +290,81 @@ class CreAssistantHandler:
 
 
 
-class CreFileChooserDialog (gtk.FileChooserDialog):
+class CreFileChooserDialog (Gtk.FileChooserDialog):
 
 	def __init__ (self,
 					title=None,
 					parent=None,
-					action=gtk.FILE_CHOOSER_ACTION_OPEN,
-					buttons=None,
-					backend=None):
-		gtk.FileChooserDialog.__init__ (self,
-									title=None,
-									parent=None,
-									action=action,
-									buttons=None,
-									backend=None)
-		alignment = gtk.Alignment (xalign=1.0)
+					action=Gtk.FileChooserAction.OPEN,
+					buttons=None):
+		super ().__init__(self,
+									title=title,
+									parent=parent,
+									action=action)
+		if buttons:
+			for text, response in buttons:
+				self.add_button (text, response)
+		alignment = Gtk.Alignment (xalign=1.0)
 
-		box = gtk.HBox ()
+		box = Gtk.HBox ()
 		box.set_spacing (14)
 		alignment.add (box)
 
-		label = gtk.Label ()
+		label = Gtk.Label ()
 		label.set_text ("Specify file format:")
-		box.pack_start (label, False)
+		box.pack_start (label, False, False, 0)
 
-		self._format_list = gtk.ListStore (gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_BOOLEAN)
+		self._format_list = Gtk.ListStore (GObject.TYPE_STRING, GObject.TYPE_STRING, GObject.TYPE_STRING, GObject.TYPE_BOOLEAN)
 		for format in SUPPORTED_FILE_FORMATS:
 			self._format_list.append (format)
 
-		self._format_combobox = gtk.ComboBox (model=self._format_list)
-		cr = gtk.CellRendererText ()
+		self._format_combobox = Gtk.ComboBox (model=self._format_list)
+		cr = Gtk.CellRendererText ()
 		self._format_combobox.pack_start (cr, False)
 		self._format_combobox.add_attribute (cr, "text", COL_FORMAT_DESCRIPTION)
 		self._format_combobox.connect ("changed", self._format_combobox_changed_cb)
-		box.pack_start (self._format_combobox, False)
+		box.pack_start (self._format_combobox, False, False, 0)
 
 		alignment.show_all ()
 		self.set_extra_widget (alignment)
 		self.connect ("response", self.on_response_cb)
-		self._allow_response_accept = False
+		self.connect ("selection-changed", self.on_selection_changed_cb)
 		self.set_local_only (False)
+
+
+	def _allow_response_accept (self):
+		format, is_biopython = self.get_file_format ()
+		if format is None:
+			return False
+		action = self.get_action ()
+		if action == Gtk.FileChooserAction.OPEN:
+			file = self.get_file ()
+			if file is None:
+				return False
+			file_type = file.query_file_type (Gio.FileQueryInfoFlags.NONE, None)
+			return file_type != Gio.FileType.DIRECTORY
+		elif action == Gtk.FileChooserAction.SAVE:
+			name = self.get_current_name ()
+			return name is not None
 
 
 	def on_response_cb (self, dialog, response):
 		# hack to disallow opening a file by pressing enter or double-clicking
 		# while no file format is selected. Ideally, the "file-activated"
 		# signal should be stopped, but this does not work.
-		if response == gtk.RESPONSE_ACCEPT and not self._allow_response_accept:
+		if response == Gtk.ResponseType.ACCEPT and not self._allow_response_accept ():
 			self.emit_stop_by_name ("response")
 			return True
 		return False
 
 
+	def on_selection_changed_cb (self, dialog):
+		self.set_response_sensitive (Gtk.ResponseType.ACCEPT, self._allow_response_accept ())
+
+
 	def add_buttons (self, *args):
-		gtk.Dialog.add_buttons (self, *args)
-		self.set_response_sensitive (gtk.RESPONSE_ACCEPT, False)
+		Gtk.Dialog.add_buttons (self, *args)
+		self.set_response_sensitive (Gtk.ResponseType.ACCEPT, self._allow_response_accept ())
 
 
 	def select_file_format (self, format):
@@ -359,18 +382,14 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 		it = combobox.get_active_iter ()
 		if it:
 			action = self.get_action ()
-			if action == gtk.FILE_CHOOSER_ACTION_SAVE:
+			if action == Gtk.FileChooserAction.SAVE:
 				filename = self.get_filename ()
 				ext = self._format_list.get_value (it, COL_FORMAT_EXTENSION)
 				if filename:
-					filename = glib.filename_display_basename (filename)
+					filename = GLib.filename_display_basename (filename)
 					(name, old_ext) = os.path.splitext (filename)
 					self.set_current_name ("%s%s" % (name, ext))
-			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, True)
-			self._allow_response_accept = True
-		else:
-			self.set_response_sensitive (gtk.RESPONSE_ACCEPT, False)
-			self._allow_response_accept = False
+		self.set_response_sensitive (Gtk.ResponseType.ACCEPT, self._allow_response_accept ())
 
 
 	def get_file_format (self):
@@ -380,7 +399,7 @@ class CreFileChooserDialog (gtk.FileChooserDialog):
 			ret = self._format_list.get (it, COL_FORMAT_NAME, COL_FORMAT_BIOPYTHON)
 		return ret
 
-gobject.type_register (CreFileChooserDialog)
+GObject.type_register (CreFileChooserDialog)
 
 
 
@@ -391,19 +410,20 @@ class SequenceView:
 		self._name = None
 		self._gfile = None
 		self._file_format = None
+		self._is_biopython_format = False
 
 		self._loading = False
 
-		self._clipboard = gtk.clipboard_get ()
+		self._clipboard = Gtk.Clipboard.get_default (Gdk.Display.get_default ())
 		self._clipboard.connect ("owner-change", self._clipboard_owner_change_cb)
 
 
-		self._it = gtk.icon_theme_get_default ()
+		self._it = Gtk.IconTheme.get_default ()
 		self._init_icon_theme ()
 		self._init_icon_factory ()
 
 		gladefile = get_file ("@PACKAGE_TARNAME@.ui")
-		self._builder = gtk.Builder ()
+		self._builder = Gtk.Builder ()
 		self._builder.add_from_file (gladefile)
 
 		self._win = self._builder.get_object ("window")
@@ -438,14 +458,14 @@ class SequenceView:
 		global _icon_factory
 
 		if not _icon_factory:
-			_icon_factory = gtk.IconFactory ()
+			_icon_factory = Gtk.IconFactory ()
 			for icon_name in ["@PACKAGE_TARNAME@-cre", "@PACKAGE_TARNAME@-decre"]:
-				icon_source = gtk.IconSource ()
+				icon_source = Gtk.IconSource ()
 				icon_source.set_icon_name (icon_name)
 				icon_source.set_direction_wildcarded (True)
 				icon_source.set_state_wildcarded (True)
 				icon_source.set_size_wildcarded (True)
-				icon_set = gtk.IconSet ()
+				icon_set = Gtk.IconSet ()
 				icon_set.add_source (icon_source)
 				_icon_factory.add (icon_name, icon_set)
 			_icon_factory.add_default ()
@@ -508,12 +528,12 @@ class SequenceView:
 		self._win.set_title ("%s - @PACKAGE_NAME@" % (self._name,))
 
 
-	def _get_name_from_gfile (self, gfile, attribute=gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, strip_ext=True):
+	def _get_name_from_gfile (self, gfile, attribute=Gio.FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, strip_ext=True):
 		if gfile.query_exists ():
-			file_info = gfile.query_info (attribute)
+			file_info = gfile.query_info (attribute, Gio.FileQueryInfoFlags.NONE)
 			full_name = file_info.get_attribute_as_string (attribute)
 		else:
-			full_name = glib.filename_display_basename (gfile.get_path ())
+			full_name = GLib.filename_display_basename (gfile.get_path ())
 		if strip_ext:
 			(name, ext) = os.path.splitext (full_name)
 		else:
@@ -529,10 +549,12 @@ class SequenceView:
 
 	def _load_contents_async_cb (self, gfile, result, format_data):
 		(file_format, is_biopython_format) = format_data
-		(contents, length, etag) = gfile.load_contents_finish (result)
+		(success, contents, _) = gfile.load_contents_finish (result)
 		self._loading = False
+		if not success:
+			return
 		if is_biopython_format:
-			handle = io.StringIO (contents)
+			handle = io.StringIO (contents.decode ())
 			records = list (SeqIO.parse (handle, file_format))
 			handle.close ()
 			if len (records) < 1:
@@ -540,12 +562,11 @@ class SequenceView:
 				self.show_error (msg)
 				return
 			record = records[0]
+		elif file_format == "txt":
+			s = Seq (contents)
+			record = SeqRecord (s)
 		else:
-			if file_format == "txt":
-				s = Seq (contents)
-				record = SeqRecord (s)
-			else:
-				raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
+			raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
 		name = record.annotations.get (seq.CREACEMBLER_TAG, None)
 		if not name:
 			name = self._get_name_from_gfile (gfile)
@@ -554,15 +575,16 @@ class SequenceView:
 		self.set_sequence_from_seq_record (record)
 		self._gfile = gfile
 		self._file_format = file_format
+		self._is_biopython_format = is_biopython_format
 		self._action_save.set_sensitive (False)
 
 
 	def set_sequence_from_gfile (self, gfile, file_format, is_biopython_format):
 		self._loading = True
-		gfile.load_contents_async (self._load_contents_async_cb, user_data=(file_format, is_biopython_format))
+		gfile.load_contents_async (callback=self._load_contents_async_cb, user_data=(file_format, is_biopython_format))
 
 
-	def _replace_contents_async_cb (self, gfile, result):
+	def _replace_contents_async_cb (self, gfile, result, data):
 		gfile.replace_contents_finish (result)
 		self._action_save.set_sensitive (False)
 		self._gfile = gfile
@@ -571,25 +593,21 @@ class SequenceView:
 
 
 	def _write_sequence_to_gfile (self, gfile, file_format, is_biopython_format):
-		(start, end) = self._textbuffer.get_bounds ()
-		contents = self._textbuffer.get_text (start, end)
+		srec = self.get_sequence ()
 		if is_biopython_format:
-			s = Seq (contents)
-			srec = SeqRecord (s)
-			name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
-			srec.annotations[seq.CREACEMBLER_TAG] = name
 			seq_str = srec.format (file_format)
+		elif file_format == "txt":
+			seq_str = str (srec.seq)
 		else:
-			if file_format == "txt":
-				seq_str = contents
-			else:
-				raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
-		gfile.replace_contents_async (seq_str, self._replace_contents_async_cb)
+			raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
+		seq = bytes (seq_str, encoding="utf-8")
+		gfile.replace_contents_async (contents=seq, etag=None, make_backup=False, flags=Gio.FileCreateFlags.NONE, cancellable=None, callback=self._replace_contents_async_cb, user_data=None)
 
 
 	def get_sequence (self):
-		text = self._textbuffer.get_text (self._textbuffer.get_start_iter (),
-											self._textbuffer.get_end_iter ())
+		(start, end) = self._textbuffer.get_bounds ()
+		text = self._textbuffer.get_text (start, end, False)
+		text = bytes (text, encoding="ASCII", errors='replace')
 		s = Seq (text)
 		srec = SeqRecord (s)
 		srec.annotations["molecule_type"] = "DNA"
@@ -598,39 +616,39 @@ class SequenceView:
 
 
 	def show_error (self, msg):
-		dlg = gtk.MessageDialog (
+		dlg = Gtk.MessageDialog (
 								parent=self._win,
-								flags=gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-								type=gtk.MESSAGE_ERROR,
-								buttons=gtk.BUTTONS_CLOSE,
+								flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+								type=Gtk.MessageType.ERROR,
+								buttons=Gtk.ButtonsType.CLOSE,
 								message_format=msg)
 		self._win.present ()
 		dlg.run ()
 		dlg.destroy ()
 
 
-	def show_filechooser (self, action=gtk.FILE_CHOOSER_ACTION_OPEN, uri=None, file_format=None):
+	def show_filechooser (self, action=Gtk.FileChooserAction.OPEN, uri=None, file_format=None):
 		global _last_folder
 
-		dlg = CreFileChooserDialog (action=action)
+		dlg = CreFileChooserDialog (action=action, parent=self._win)
 
-		if action == gtk.FILE_CHOOSER_ACTION_OPEN:
+		if action == Gtk.FileChooserAction.OPEN:
 			dlg.set_title ("Open sequence")
-			dlg.add_buttons (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+			dlg.add_buttons (Gtk.STOCK_OPEN, Gtk.ResponseType.ACCEPT, Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 			dlg.set_select_multiple (True)
 			if _last_folder:
 				dlg.set_current_folder (_last_folder)
-		elif action == gtk.FILE_CHOOSER_ACTION_SAVE:
+		elif action == Gtk.FileChooserAction.SAVE:
 			dlg.set_title ("Save sequence")
-			dlg.add_buttons (gtk.STOCK_SAVE, gtk.RESPONSE_ACCEPT, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+			dlg.add_buttons (Gtk.STOCK_SAVE, Gtk.ResponseType.ACCEPT, Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 			if uri:
-				gfile = gio.File (uri=uri)
+				gfile = Gio.File.new_for_uri (uri)
 				if gfile.query_exists ():
 					dlg.set_uri (uri)
 				else:
 					if _last_folder:
 						dlg.set_current_folder (_last_folder)
-					name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
+					name = self._get_name_from_gfile (gfile, Gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
 					dlg.set_current_name (name)
 
 		if not file_format:
@@ -639,7 +657,7 @@ class SequenceView:
 
 		resp = dlg.run ()
 		uris = []
-		if resp == gtk.RESPONSE_ACCEPT:
+		if resp == Gtk.ResponseType.ACCEPT:
 			for uri in dlg.get_uris ():
 				uris.append (uri)
 		(file_format, is_biopython_format) = dlg.get_file_format ()
@@ -649,13 +667,13 @@ class SequenceView:
 
 
 	def _received_clipboard_contents_cb (self, clipboard, selection_data, user_data):
-		self._action_paste.set_sensitive (selection_data.targets_include_text ())
+		self._action_paste.set_sensitive (selection_data is not None)
 
 
 	def _set_paste_sensitivity_according_to_clipboard (self):
 		display = self._clipboard.get_display ()
 		if display.supports_selection_notification ():
-			self._clipboard.request_contents ("TARGETS", self._received_clipboard_contents_cb)
+			self._clipboard.request_text (self._received_clipboard_contents_cb, None)
 		else:
 			self._action_paste.set_sensitive (True)
 
@@ -680,7 +698,7 @@ class SequenceView:
 			return False
 
 		uri = uris.pop (0)
-		gfile = gio.File (uri=uri)
+		gfile = Gio.File.new_for_uri (uri)
 		if self._gfile or self._loading:
 			new_view = self._viewmanager.new_view ()
 			new_view.set_sequence_from_gfile (gfile, format, is_biopython_format)
@@ -692,38 +710,41 @@ class SequenceView:
 	def action_open_activate_cb (self, *args):
 		(format, is_biopython_format, uris) = self.show_filechooser ()
 		self._file_format = format
-		glib.idle_add (self._open_uris_async, uris, format, is_biopython_format)
+		self._is_biopython_format = is_biopython_format
+		GLib.idle_add (self._open_uris_async, uris, format, is_biopython_format)
 
 
 	def action_save_activate_cb (self, *args):
 		if not self._gfile:
 			path = os.path.join (_last_folder, self.get_name ())
-			gfile = gio.File (path=path)
-			(format, is_biopython_format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+			gfile = Gio.File.new_for_path (path)
+			(format, is_biopython_format, uris) = self.show_filechooser (action=Gtk.FileChooserAction.SAVE,
 												uri=gfile.get_uri ())
 			if not uris:
 				return
 
-			self._file_format = format
-
-			gfile = gio.File (uri=uris[0])
-
+			gfile = Gio.File.new_for_uri (uris[0])
+		else:
+			gfile = self._gfile
+			format = self._file_format
+			is_biopython_format = self._is_biopython_format
 		self._write_sequence_to_gfile (gfile, format, is_biopython_format)
 
 
 	def action_save_as_activate_cb (self, *args):
 		if not self._gfile:
 			path = os.path.join (_last_folder, self.get_name ())
-			gfile = gio.File (path=path)
+			gfile = Gio.File.new_for_path (path)
 		else:
 			gfile = self._gfile
-		(format, is_biopython_format, uris) = self.show_filechooser (action=gtk.FILE_CHOOSER_ACTION_SAVE,
+		(format, is_biopython_format, uris) = self.show_filechooser (action=Gtk.FileChooserAction.SAVE,
 											uri=gfile.get_uri ())
 		if not uris:
 			return
 
 		self._file_format = format
-		gfile = gio.File (uri=uris[0])
+		self._is_biopython_format = is_biopython_format
+		gfile = Gio.File.new_for_uri (uris[0])
 		self._write_sequence_to_gfile (gfile, format, is_biopython_format)
 
 
@@ -799,25 +820,24 @@ class SequenceView:
 
 
 
-class ViewManager (gobject.GObject):
+class ViewManager (GObject.GObject):
 
 	__gproperties__ = {
-				"sequence_count": (gobject.TYPE_INT,
+				"sequence_count": (GObject.TYPE_INT,
 					"sequence count",
 					"number of sequence files currently opened",
 					0, 1000, 0,
-					gobject.PARAM_READABLE)
+					GObject.PARAM_READABLE)
 					}
 
 	def __init__ (self):
-		gobject.GObject.__init__ (self)
+		super ().__init__ ()
 		self._views = []
-		self._cre_assistant_handler = CreAssistantHandler (self)
 		self.new_view ()
 
 
 	def run (self):
-		gtk.main ()
+		Gtk.main ()
 
 
 	def do_get_property (self, pspec):
@@ -839,7 +859,7 @@ class ViewManager (gobject.GObject):
 		self._views.remove (view)
 		self.notify ("sequence_count")
 		if len (self._views) == 0:
-			gtk.main_quit ()
+			Gtk.main_quit ()
 
 
 	def quit (self):
@@ -848,11 +868,12 @@ class ViewManager (gobject.GObject):
 
 
 	def show_cre_assistant (self, view):
-		self._cre_assistant_handler.show (view)
+		cre_assistant_handler = CreAssistantHandler (self)
+		cre_assistant_handler.show (view)
 
 
 	def get_view_list (self):
 		return self._views[:]
 
-gobject.type_register (ViewManager)
+GObject.type_register (ViewManager)
 
