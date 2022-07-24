@@ -33,7 +33,6 @@ import io
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 
 ENABLE_UNINSTALLED = @ENABLE_UNINSTALLED@
 
@@ -543,7 +542,7 @@ class SequenceView:
 			record = records[0]
 		else:
 			if file_format == "txt":
-				s = Seq (contents, generic_dna)
+				s = Seq (contents)
 				record = SeqRecord (s)
 			else:
 				raise NotImplementedError ("File format '%s' not implemented!" % (file_format,))
@@ -551,6 +550,7 @@ class SequenceView:
 		if not name:
 			name = self._get_name_from_gfile (gfile)
 			record.annotations[seq.CREACEMBLER_TAG] = name
+		record.annotations['molecule_type'] = "DNA"
 		self.set_sequence_from_seq_record (record)
 		self._gfile = gfile
 		self._file_format = file_format
@@ -574,7 +574,7 @@ class SequenceView:
 		(start, end) = self._textbuffer.get_bounds ()
 		contents = self._textbuffer.get_text (start, end)
 		if is_biopython_format:
-			s = Seq (contents, generic_dna)
+			s = Seq (contents)
 			srec = SeqRecord (s)
 			name = self._get_name_from_gfile (gfile, gio.FILE_ATTRIBUTE_STANDARD_EDIT_NAME)
 			srec.annotations[seq.CREACEMBLER_TAG] = name
@@ -591,8 +591,8 @@ class SequenceView:
 		text = self._textbuffer.get_text (self._textbuffer.get_start_iter (),
 											self._textbuffer.get_end_iter ())
 		s = Seq (text)
-		s.alphabet = generic_dna
 		srec = SeqRecord (s)
+		srec.annotations["molecule_type"] = "DNA"
 		srec.annotations[seq.CREACEMBLER_TAG] = self.get_name ()
 		return srec
 

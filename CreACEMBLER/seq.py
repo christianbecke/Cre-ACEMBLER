@@ -19,7 +19,6 @@
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 
 from .circular_permutations import circular_permutations
 
@@ -80,7 +79,6 @@ def cre (*args):
 			if not name:
 				name = "seq%02d" % (i,)
 			names.append (name)
-		s.alphabet = generic_dna
 		combined_srec = SeqRecord (s)
 		combined_srec.annotations[CREACEMBLER_TAG] = "_x_".join (names)
 		out_srecs.append (combined_srec)
@@ -114,7 +112,6 @@ def decre (srec):
 		if need_revcomp:
 			p = p.reverse_complement ()
 		s = Seq (LOXPFWD) + p
-		s.alphabet = generic_dna
 		srec = SeqRecord (s)
 		if len (parts) > 1:
 			 name = "%s%02d" % (original_name, count)
