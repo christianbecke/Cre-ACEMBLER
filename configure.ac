@@ -60,7 +60,6 @@ data/icons/hicolor/128x128/Makefile
 data/icons/hicolor/128x128/apps/Makefile
 data/icons/hicolor/scalable/Makefile
 data/icons/hicolor/scalable/actions/Makefile
-data/win32/Makefile
 CreACEMBLER/Makefile
 CreACEMBLER/ui/Makefile
 ])

@@ -1,4 +1,4 @@
-SUBDIRS = icons win32
+SUBDIRS = icons
 
 Multimediadir = $(datadir)/applications
 Multimedia_DATA = $(PACKAGE_TARNAME).desktop

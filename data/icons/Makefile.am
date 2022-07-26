@@ -1,2 +1,2 @@
 SUBDIRS = hicolor
-
+EXTRA_DIST = ${PACKAGE_TARNAME}.ico
