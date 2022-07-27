@@ -93,7 +93,7 @@ def get_file (filename):
 		if os.path.exists (file):
 			_file_cache[filename] = file
 			return file
-	return filename
+	raise FileNotFoundError ("Could not find '%s'" % filename)
 
 
 class CreAssistantHandler:
